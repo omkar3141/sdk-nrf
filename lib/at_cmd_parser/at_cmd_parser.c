@@ -116,10 +116,36 @@ static int at_parse_detect_type(const char **str, int index)
 	return 0;
 }
 
-static int at_parse_process_element(const char **str, int index,
+static void at_parse_set_state_from_type(int type)
+{
+	switch(type) {
+	case AT_PARAM_TYPE_NUM_SHORT:
+		set_new_state(NUMBER);
+        break;
+
+	case AT_PARAM_TYPE_NUM_INT:
+		set_new_state(NUMBER);
+        break;
+
+	case AT_PARAM_TYPE_STRING:
+		set_new_state(STRING);
+        break;
+
+	case AT_PARAM_TYPE_ARRAY:
+		set_new_state(ARRAY);
+        break;
+
+	default:
+		set_new_state(OPTIONAL);
+        break;
+	}
+}
+
+static int at_parse_process_element(const char **str, int *pIndex,
 				    struct at_param_list *const list)
 {
 	const char *tmpstr = *str;
+	int         index  = *pIndex;
 
 	if (is_terminated(*tmpstr)) {
 		return -1;
@@ -161,6 +187,13 @@ static int at_parse_process_element(const char **str, int index,
 		const char *start_ptr = tmpstr;
 
 		while (!is_lfcr(*tmpstr) && !is_terminated(*tmpstr)) {
+			if (*tmpstr == ' ') {
+				at_params_string_put(list, index, start_ptr,
+				     tmpstr - start_ptr);
+				++index;
+				start_ptr = tmpstr+1;
+			}
+
 			tmpstr++;
 		}
 
@@ -234,6 +267,8 @@ static int at_parse_process_element(const char **str, int index,
 	}
 
 	*str = tmpstr;
+	*pIndex = index;
+
 	return 0;
 }
 
@@ -243,7 +278,8 @@ static int at_parse_process_element(const char **str, int index,
  */
 static int at_parse_param(const char **at_params_str,
 			  struct at_param_list *const list,
-			  const size_t max_params)
+			  const size_t max_params,
+			  int type)
 {
 	int index = 0;
 	const char *str = *at_params_str;
@@ -256,11 +292,16 @@ static int at_parse_param(const char **at_params_str,
 			str++;
 		}
 
-		if (at_parse_detect_type(&str, index) == -1) {
-			break;
+		if ((index == 0) || (type == AT_PARAM_TYPE_INVALID)) {
+			if (at_parse_detect_type(&str, index) == -1) {
+				break;
+			}
+		}
+		else {
+			at_parse_set_state_from_type(type);
 		}
 
-		if (at_parse_process_element(&str, index, list) == -1) {
+		if (at_parse_process_element(&str, &index, list) == -1) {
 			break;
 		}
 
@@ -275,12 +316,16 @@ static int at_parse_param(const char **at_params_str,
 					break;
 				}
 
-				if (at_parse_detect_type(&str, index) == -1) {
-					break;
+				if ((index == 0) || (type == AT_PARAM_TYPE_INVALID)) {
+					if (at_parse_detect_type(&str, index) == -1) {
+						break;
+					}
+				}
+				else {
+					at_parse_set_state_from_type(type);
 				}
 
-				if (at_parse_process_element(&str, index,
-							     list) == -1) {
+				if (at_parse_process_element(&str, &index, list) == -1) {
 					break;
 				}
 			}
@@ -343,7 +388,29 @@ int at_parser_max_params_from_str(const char *at_params_str,
 
 	max_params_count = MIN(max_params_count, list->param_count);
 
-	err = at_parse_param(&at_params_str, list, max_params_count);
+	err = at_parse_param(&at_params_str, list, max_params_count, AT_PARAM_TYPE_INVALID);
+
+	if (next_param_str) {
+		*next_param_str = (char *)at_params_str;
+	}
+
+	return err;
+}
+
+int at_parser_params_from_str_with_type(const char *at_params_str,
+				  char **next_param_str,
+				  struct at_param_list *const list,
+                  int type)
+{
+	int err = 0;
+
+	if (at_params_str == NULL || list == NULL || list->params == NULL) {
+		return -EINVAL;
+	}
+
+	at_params_list_clear(list);
+
+	err = at_parse_param(&at_params_str, list, list->param_count, type);
 
 	if (next_param_str) {
 		*next_param_str = (char *)at_params_str;
