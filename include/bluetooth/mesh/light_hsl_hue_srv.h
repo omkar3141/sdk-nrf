@@ -6,13 +6,13 @@
 
 /**
  * @file
- * @defgroup bt_mesh_hsl_sat_srv Light HSL Saturation Server model
+ * @defgroup bt_mesh_hsl_hue_srv Light HSL Hue Server model
  * @{
- * @brief API for the Light HSL Saturation Server model.
+ * @brief API for the Light HSL Hue Server model.
  */
 
-#ifndef BT_MESH_HSL_SAT_SRV_H__
-#define BT_MESH_HSL_SAT_SRV_H__
+#ifndef BT_MESH_HSL_HUE_SRV_H__
+#define BT_MESH_HSL_HUE_SRV_H__
 
 #include <bluetooth/mesh/light_hsl.h>
 #include <bluetooth/mesh/model_types.h>
@@ -22,57 +22,57 @@
 extern "C" {
 #endif
 
-struct bt_mesh_hsl_sat_srv;
+struct bt_mesh_hsl_hue_srv;
 
-/** @def BT_MESH_HSL_SAT_SRV_INIT
+/** @def BT_MESH_HSL_HUE_SRV_INIT
  *
- * @brief Initialization parameters for a @ref bt_mesh_hsl_sat_srv
+ * @brief Initialization parameters for a @ref bt_mesh_hsl_hue_srv
  * instance.
  *
- * @param[in] _handlers HSL Saturation Server callbacks.
+ * @param[in] _handlers HSL Hue Server callbacks.
  */
-#define BT_MESH_HSL_SAT_SRV_INIT(_handlers)                                    \
+#define BT_MESH_HSL_HUE_SRV_INIT(_handlers)                                    \
 	{                                                                      \
 		.handlers = _handlers,                                         \
 		.lvl = BT_MESH_LVL_SRV_INIT(                                   \
-			&_bt_mesh_hsl_sat_srv_lvl_handlers),                   \
+			&_bt_mesh_hsl_hue_srv_lvl_handlers),                   \
 		.pub = { .msg = NET_BUF_SIMPLE(BT_MESH_MODEL_BUF_LEN(          \
-				 BT_MESH_HSL_SATURATION_STATUS,                \
+				 BT_MESH_HSL_HUE_STATUS,                \
 				 BT_MESH_HSL_MSG_MAXLEN_HUE_STATUS)) },        \
 		.range = { .min = 0, .max = 0xFFFF },                          \
 	}
 
-/** @def BT_MESH_MODEL_HSL_SAT_SRV
+/** @def BT_MESH_MODEL_HSL_HUE_SRV
  *
- * @brief HSL Saturation Server model composition data entry.
+ * @brief HSL Hue Server model composition data entry.
  *
- * @param[in] _srv Pointer to a @ref bt_mesh_hsl_sat_srv instance.
+ * @param[in] _srv Pointer to a @ref bt_mesh_hsl_hue_srv instance.
  */
-#define BT_MESH_MODEL_HSL_SAT_SRV(_srv)                                        \
+#define BT_MESH_MODEL_HSL_HUE_SRV(_srv)                                        \
 	BT_MESH_MODEL_LVL_SRV(&(_srv)->lvl),                                   \
-		BT_MESH_MODEL_CB(BT_MESH_MODEL_ID_LIGHT_HSL_SAT_SRV,           \
-				 _bt_mesh_hsl_sat_srv_op, &(_srv)->pub,        \
+		BT_MESH_MODEL_CB(BT_MESH_MODEL_ID_LIGHT_HSL_HUE_SRV,           \
+				 _bt_mesh_hsl_hue_srv_op, &(_srv)->pub,        \
 				 BT_MESH_MODEL_USER_DATA(                      \
-					 struct bt_mesh_hsl_sat_srv, _srv),    \
-				 &_bt_mesh_hsl_sat_srv_cb)
+					 struct bt_mesh_hsl_hue_srv, _srv),    \
+				 &_bt_mesh_hsl_hue_srv_cb)
 
-/** HSL Saturation Server state access handlers. */
-struct bt_mesh_hsl_sat_srv_handlers {
-	/** @brief Set the Saturation state.
+/** HSL Hue Server state access handlers. */
+struct bt_mesh_hsl_hue_srv_handlers {
+	/** @brief Set the Hue state.
 	 *
 	 * @note This handler is mandatory.
 	 *
-	 * @param[in] srv Server to set the Saturation state of.
+	 * @param[in] srv Server to set the Hue state of.
 	 * @param[in] ctx Message context.
 	 * @param[in] set Parameters of the state change.
 	 * @param[out] rsp Response structure to be filled.
 	 */
-	void (*const set)(struct bt_mesh_hsl_sat_srv *srv,
+	void (*const set)(struct bt_mesh_hsl_hue_srv *srv,
 			  struct bt_mesh_msg_ctx *ctx,
 			  const struct bt_mesh_hsl_hue_set *set,
 			  struct bt_mesh_hsl_hue_status *rsp);
 
-	/** @brief Get the Saturation state.
+	/** @brief Get the Hue state.
 	 *
 	 * @note This handler is mandatory.
 	 *
@@ -80,16 +80,16 @@ struct bt_mesh_hsl_sat_srv_handlers {
 	 * @param[in] ctx Message context.
 	 * @param[out] rsp Response structure to be filled.
 	 */
-	void (*const get)(struct bt_mesh_hsl_sat_srv *srv,
+	void (*const get)(struct bt_mesh_hsl_hue_srv *srv,
 			  struct bt_mesh_msg_ctx *ctx,
 			  struct bt_mesh_hsl_hue_status *rsp);
 };
 
 /**
- * HSL Saturation Server instance. Should be initialized with
- * @ref BT_MESH_HSL_SAT_SRV_INIT.
+ * HSL Hue Server instance. Should be initialized with
+ * @ref BT_MESH_HSL_HUE_SRV_INIT.
  */
-struct bt_mesh_hsl_sat_srv {
+struct bt_mesh_hsl_hue_srv {
 	/** Light Level Server instance. */
 	struct bt_mesh_lvl_srv lvl;
 	/** Model entry. */
@@ -101,18 +101,18 @@ struct bt_mesh_hsl_sat_srv {
 	/** Acknowledged message tracking. */
 	struct bt_mesh_model_ack_ctx ack_ctx;
 	/** Handler function structure. */
-	const struct bt_mesh_hsl_sat_srv_handlers *handlers;
-	/** Saturation range */
+	const struct bt_mesh_hsl_hue_srv_handlers *handlers;
+	/** Hue range */
 	struct bt_mesh_hsl_range range;
-	/** Last known Saturation level */
-	uint16_t satur_last;
-	/** Default Saturation level */
-	uint16_t satur_default;
+	/** Last known Hue level */
+	uint16_t hue_last;
+	/** Default Hue level */
+	uint16_t hue_default;
 };
 
-/** @brief Publish the current HSL Saturation status.
+/** @brief Publish the current HSL Hue status.
  *
- * Asynchronously publishes a HSL Saturation status message with the configured
+ * Asynchronously publishes a HSL Hue status message with the configured
  * publish parameters.
  *
  * @note This API is only used publishing unprompted status messages. Response
@@ -130,20 +130,20 @@ struct bt_mesh_hsl_sat_srv {
  * not configured.
  * @retval -EAGAIN The device has not been provisioned.
  */
-int32_t bt_mesh_hsl_sat_srv_pub(struct bt_mesh_hsl_sat_srv *srv,
+int32_t bt_mesh_hsl_hue_srv_pub(struct bt_mesh_hsl_hue_srv *srv,
 				struct bt_mesh_msg_ctx *ctx,
 				struct bt_mesh_hsl_hue_status *status);
 
 /** @cond INTERNAL_HIDDEN */
-extern const struct bt_mesh_model_op _bt_mesh_hsl_sat_srv_op[];
-extern const struct bt_mesh_model_cb _bt_mesh_hsl_sat_srv_cb;
-extern const struct bt_mesh_lvl_srv_handlers _bt_mesh_hsl_sat_srv_lvl_handlers;
+extern const struct bt_mesh_model_op _bt_mesh_hsl_hue_srv_op[];
+extern const struct bt_mesh_model_cb _bt_mesh_hsl_hue_srv_cb;
+extern const struct bt_mesh_lvl_srv_handlers _bt_mesh_hsl_hue_srv_lvl_handlers;
 /** @endcond */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* BT_MESH_HSL_SAT_SRV_H__ */
+#endif /* BT_MESH_HSL_HUE_SRV_H__ */
 
 /* @} */

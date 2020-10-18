@@ -73,7 +73,7 @@ struct bt_mesh_hsl_range {
 };
 
 /** Light HSL range set message parameters. */
-struct bt_mesh_hsl_range_status {
+struct bt_mesh_hsl_range_set {
 	/** Hue range */
 	struct bt_mesh_hsl_range hue;
 	/** Saturation range */
