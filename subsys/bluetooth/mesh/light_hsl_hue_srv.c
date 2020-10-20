@@ -219,7 +219,6 @@ static void lvl_move_set(struct bt_mesh_lvl_srv *lvl_srv,
 	struct bt_mesh_hsl_hue_srv *srv =
 		CONTAINER_OF(lvl_srv, struct bt_mesh_hsl_hue_srv, lvl);
 	struct bt_mesh_hsl_hue_status status = { 0 };
-	uint16_t target;
 
 	srv->handlers->get(srv, NULL, &status);
 

@@ -104,7 +104,8 @@ struct bt_mesh_hsl_hue_srv hue_srv = BT_MESH_HSL_HUE_SRV_INIT(&hue_handlers);
 					 struct bt_mesh_hsl_sat_srv, _srv),    \
 				 &_bt_mesh_hsl_sat_srv_cb)
 
-
+/* ----------------------------------- HSL CLIENT ----------------------------------- */
+struct bt_mesh_light_hsl_cli hsl_cli = BT_MESH_LIGHT_HSL_CLI_INIT(NULL);
 
 /* Light switch behavior */
 
@@ -274,7 +275,7 @@ static struct bt_mesh_elem elements[] = {
 		     BT_MESH_MODEL_LIST(
 			     BT_MESH_MODEL_CFG_SRV(&cfg_srv),
 			     BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
-			     BT_MESH_MODEL_ONOFF_CLI(&buttons[0].client)),
+			     BT_MESH_MODEL_LIGHT_HSL_CLI(&hsl_cli)),
 		     BT_MESH_MODEL_NONE),
 	BT_MESH_ELEM(2,
 		     BT_MESH_MODEL_LIST(

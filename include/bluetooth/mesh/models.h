@@ -48,6 +48,7 @@
 #include <bluetooth/mesh/light_ctl_cli.h>
 #include <bluetooth/mesh/light_temp_srv.h>
 #include <bluetooth/mesh/light_ctl_srv.h>
+#include <bluetooth/mesh/light_hsl_cli.h>
 #include <bluetooth/mesh/light_hsl_sat_srv.h>
 #include <bluetooth/mesh/light_hsl_hue_srv.h>
 
