@@ -20,13 +20,13 @@
 struct bt_mesh_lvl_cli lvl_cli = BT_MESH_LVL_CLI_INIT(NULL);
 
 struct bt_mesh_model_transition sat_transition;
-struct bt_mesh_hsl_hue_set sat_data = {
+struct bt_mesh_light_hsl_hue_set sat_data = {
 	.transition = &sat_transition,
 };
 
-void sat_set(struct bt_mesh_hsl_sat_srv *srv, struct bt_mesh_msg_ctx *ctx,
-	     const struct bt_mesh_hsl_hue_set *set,
-	     struct bt_mesh_hsl_hue_status *rsp)
+void sat_set(struct bt_mesh_light_hsl_sat_srv *srv, struct bt_mesh_msg_ctx *ctx,
+	     const struct bt_mesh_light_hsl_hue_set *set,
+	     struct bt_mesh_light_hsl_hue_status *rsp)
 {
 	sat_data.level = set->level;
 	sat_transition.delay = set->transition->delay;
@@ -39,30 +39,30 @@ void sat_set(struct bt_mesh_hsl_sat_srv *srv, struct bt_mesh_msg_ctx *ctx,
 	rsp->remaining_time = sat_transition.delay + sat_transition.time;
 }
 
-void sat_get(struct bt_mesh_hsl_sat_srv *srv, struct bt_mesh_msg_ctx *ctx,
-	     struct bt_mesh_hsl_hue_status *rsp)
+void sat_get(struct bt_mesh_light_hsl_sat_srv *srv, struct bt_mesh_msg_ctx *ctx,
+	     struct bt_mesh_light_hsl_hue_status *rsp)
 {
 	rsp->current = sat_data.level;
 	rsp->target = sat_data.level;
 	rsp->remaining_time = sat_transition.delay + sat_transition.time;
 }
 
-struct bt_mesh_hsl_sat_srv_handlers sat_handlers = {
+struct bt_mesh_light_hsl_sat_srv_handlers sat_handlers = {
 	.set = sat_set,
 	.get = sat_get,
 };
 
-struct bt_mesh_hsl_sat_srv sat_srv = BT_MESH_HSL_SAT_SRV_INIT(&sat_handlers);
+struct bt_mesh_light_hsl_sat_srv sat_srv = BT_MESH_LIGHT_HSL_SAT_SRV_INIT(&sat_handlers);
 
 /* ----------------------------- HUE SERVER ----------------------------- */
 struct bt_mesh_model_transition hue_transition;
-struct bt_mesh_hsl_hue_set hue_data = {
+struct bt_mesh_light_hsl_hue_set hue_data = {
 	.transition = &hue_transition,
 };
 
-void hue_set(struct bt_mesh_hsl_hue_srv *srv, struct bt_mesh_msg_ctx *ctx,
-	     const struct bt_mesh_hsl_hue_set *set,
-	     struct bt_mesh_hsl_hue_status *rsp)
+void hue_set(struct bt_mesh_light_hsl_hue_srv *srv, struct bt_mesh_msg_ctx *ctx,
+	     const struct bt_mesh_light_hsl_hue_set *set,
+	     struct bt_mesh_light_hsl_hue_status *rsp)
 {
 	hue_data.level = set->level;
 	hue_transition.delay = set->transition->delay;
@@ -75,34 +75,34 @@ void hue_set(struct bt_mesh_hsl_hue_srv *srv, struct bt_mesh_msg_ctx *ctx,
 	rsp->remaining_time = hue_transition.delay + hue_transition.time;
 }
 
-void hue_get(struct bt_mesh_hsl_hue_srv *srv, struct bt_mesh_msg_ctx *ctx,
-	     struct bt_mesh_hsl_hue_status *rsp)
+void hue_get(struct bt_mesh_light_hsl_hue_srv *srv, struct bt_mesh_msg_ctx *ctx,
+	     struct bt_mesh_light_hsl_hue_status *rsp)
 {
 	rsp->current = hue_data.level;
 	rsp->target = hue_data.level;
 	rsp->remaining_time = hue_transition.delay + hue_transition.time;
 }
 
-struct bt_mesh_hsl_hue_srv_handlers hue_handlers = {
+struct bt_mesh_light_hsl_hue_srv_handlers hue_handlers = {
 	.set = hue_set,
 	.get = hue_get,
 };
 
-struct bt_mesh_hsl_hue_srv hue_srv = BT_MESH_HSL_HUE_SRV_INIT(&hue_handlers);
+struct bt_mesh_light_hsl_hue_srv hue_srv = BT_MESH_LIGHT_HSL_HUE_SRV_INIT(&hue_handlers);
 
 /** @def BT_MESH_MODEL_HSL_SAT_SRV
  *
  * @brief HSL Saturation Server model composition data entry.
  *
- * @param[in] _srv Pointer to a @ref bt_mesh_hsl_sat_srv instance.
+ * @param[in] _srv Pointer to a @ref bt_mesh_light_hsl_sat_srv instance.
  */
 #define BT_MESH_MODEL_HSL_SAT_SRV(_srv)                                        \
 	BT_MESH_MODEL_LVL_SRV(&(_srv)->lvl),                                   \
 		BT_MESH_MODEL_CB(BT_MESH_MODEL_ID_LIGHT_HSL_SAT_SRV,           \
-				 _bt_mesh_hsl_sat_srv_op, &(_srv)->pub,        \
+				 _bt_mesh_light_hsl_sat_srv_op, &(_srv)->pub,        \
 				 BT_MESH_MODEL_USER_DATA(                      \
-					 struct bt_mesh_hsl_sat_srv, _srv),    \
-				 &_bt_mesh_hsl_sat_srv_cb)
+					 struct bt_mesh_light_hsl_sat_srv, _srv),    \
+				 &_bt_mesh_light_hsl_sat_srv_cb)
 
 /* ----------------------------------- HSL CLIENT ----------------------------------- */
 struct bt_mesh_light_hsl_cli hsl_cli = BT_MESH_LIGHT_HSL_CLI_INIT(NULL);

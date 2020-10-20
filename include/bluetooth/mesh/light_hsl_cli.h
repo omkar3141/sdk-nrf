@@ -31,8 +31,8 @@ struct bt_mesh_light_hsl_cli;
 	{                                                                      \
 		.handlers = _handlers,                                         \
 		.pub = {.msg = NET_BUF_SIMPLE(BT_MESH_MODEL_BUF_LEN(           \
-				BT_MESH_HSL_SET,                         \
-				BT_MESH_HSL_MSG_MAXLEN_SET)) }           \
+				BT_MESH_LIGHT_HSL_SET,                         \
+				BT_MESH_LIGHT_HSL_MSG_MAXLEN_SET)) }           \
 	}
 
 /** @def BT_MESH_MODEL_LIGHT_HSL_CLI
@@ -59,7 +59,7 @@ struct bt_mesh_light_hsl_cli_handlers {
 	 */
 	void (*const hsl_status)(struct bt_mesh_light_hsl_cli *cli,
 				 struct bt_mesh_msg_ctx *ctx,
-				 const struct bt_mesh_hsl_status *status);
+				 const struct bt_mesh_light_hsl_status *status);
 
 	/** @brief HSL target status message handler.
 	 *
@@ -70,7 +70,7 @@ struct bt_mesh_light_hsl_cli_handlers {
 	 */
 	void (*const hsl_target_status)(struct bt_mesh_light_hsl_cli *cli,
 				 struct bt_mesh_msg_ctx *ctx,
-				 const struct bt_mesh_hsl_status *status);
+				 const struct bt_mesh_light_hsl_status *status);
 
 	/** @brief Default parameter status message handler.
 	 *
@@ -80,7 +80,7 @@ struct bt_mesh_light_hsl_cli_handlers {
 	 */
 	void (*const default_status)(
 		struct bt_mesh_light_hsl_cli *cli, struct bt_mesh_msg_ctx *ctx,
-		const struct bt_mesh_hsl *status);
+		const struct bt_mesh_light_hsl *status);
 
 	/** @brief Range status message handler.
 	 *
@@ -90,7 +90,7 @@ struct bt_mesh_light_hsl_cli_handlers {
 	 */
 	void (*const range_status)(
 		struct bt_mesh_light_hsl_cli *cli, struct bt_mesh_msg_ctx *ctx,
-		const struct bt_mesh_hsl_range_status *status);
+		const struct bt_mesh_light_hsl_range_status *status);
 
 	/** @brief Hue status message handler.
 	 *
@@ -101,7 +101,7 @@ struct bt_mesh_light_hsl_cli_handlers {
 	 */
 	void (*const hue_status)(
 		struct bt_mesh_light_hsl_cli *cli, struct bt_mesh_msg_ctx *ctx,
-		const struct bt_mesh_hsl_hue_status *status);
+		const struct bt_mesh_light_hsl_hue_status *status);
 
 	/** @brief Saturation status message handler.
 	 *
@@ -112,7 +112,7 @@ struct bt_mesh_light_hsl_cli_handlers {
 	 */
 	void (*const saturation_status)(
 		struct bt_mesh_light_hsl_cli *cli, struct bt_mesh_msg_ctx *ctx,
-		const struct bt_mesh_hsl_hue_status *status);
+		const struct bt_mesh_light_hsl_hue_status *status);
 };
 
 /**
@@ -153,7 +153,7 @@ struct bt_mesh_light_hsl_cli {
  */
 int bt_mesh_light_hsl_get(struct bt_mesh_light_hsl_cli *cli,
 			  struct bt_mesh_msg_ctx *ctx,
-			  struct bt_mesh_hsl_status *rsp);
+			  struct bt_mesh_light_hsl_status *rsp);
 
 /** @brief Set the HSL state of the server.
  *
@@ -177,8 +177,8 @@ int bt_mesh_light_hsl_get(struct bt_mesh_light_hsl_cli *cli,
  */
 int bt_mesh_light_hsl_set(struct bt_mesh_light_hsl_cli *cli,
 			  struct bt_mesh_msg_ctx *ctx,
-			  const struct bt_mesh_hsl_set *set,
-			  struct bt_mesh_hsl_status *rsp);
+			  const struct bt_mesh_light_hsl_set *set,
+			  struct bt_mesh_light_hsl_status *rsp);
 
 /** @brief Set the HSL state of the server without requesting a response.
  *
@@ -196,7 +196,7 @@ int bt_mesh_light_hsl_set(struct bt_mesh_light_hsl_cli *cli,
  */
 int bt_mesh_light_hsl_set_unack(struct bt_mesh_light_hsl_cli *cli,
 				struct bt_mesh_msg_ctx *ctx,
-				const struct bt_mesh_hsl_set *set);
+				const struct bt_mesh_light_hsl_set *set);
 
 /** @brief Get the Light HSL target state of the bound server.
  *
@@ -219,7 +219,7 @@ int bt_mesh_light_hsl_set_unack(struct bt_mesh_light_hsl_cli *cli,
  */
 int bt_mesh_light_hsl_target_get(struct bt_mesh_light_hsl_cli *cli,
 			  struct bt_mesh_msg_ctx *ctx,
-			  struct bt_mesh_hsl_status *rsp);
+			  struct bt_mesh_light_hsl_status *rsp);
 
 /** @brief Get the default HSL value of the bound server.
  *
@@ -242,7 +242,7 @@ int bt_mesh_light_hsl_target_get(struct bt_mesh_light_hsl_cli *cli,
  */
 int bt_mesh_light_hsl_default_get(struct bt_mesh_light_hsl_cli *cli,
 				  struct bt_mesh_msg_ctx *ctx,
-				  struct bt_mesh_hsl *rsp);
+				  struct bt_mesh_light_hsl *rsp);
 
 /** @brief Set the default HSL value of the server.
  *
@@ -266,8 +266,8 @@ int bt_mesh_light_hsl_default_get(struct bt_mesh_light_hsl_cli *cli,
  */
 int bt_mesh_light_hsl_default_set(struct bt_mesh_light_hsl_cli *cli,
 				  struct bt_mesh_msg_ctx *ctx,
-				  const struct bt_mesh_hsl *set,
-				  struct bt_mesh_hsl *rsp);
+				  const struct bt_mesh_light_hsl *set,
+				  struct bt_mesh_light_hsl *rsp);
 
 /** @brief Set the default HSL value of the server without requesting a
  * response.
@@ -286,7 +286,7 @@ int bt_mesh_light_hsl_default_set(struct bt_mesh_light_hsl_cli *cli,
  */
 int bt_mesh_light_hsl_default_set_unack(
 	struct bt_mesh_light_hsl_cli *cli, struct bt_mesh_msg_ctx *ctx,
-	const struct bt_mesh_hsl *set);
+	const struct bt_mesh_light_hsl *set);
 
 /** @brief Get the Light HSL Range state of the bound server.
  *
@@ -309,7 +309,7 @@ int bt_mesh_light_hsl_default_set_unack(
  */
 int bt_mesh_light_hsl_range_get(
 	struct bt_mesh_light_hsl_cli *cli, struct bt_mesh_msg_ctx *ctx,
-	struct bt_mesh_hsl_range_status *rsp);
+	struct bt_mesh_light_hsl_range_status *rsp);
 
 /** @brief Set the HSL Range of the server.
  *
@@ -333,8 +333,8 @@ int bt_mesh_light_hsl_range_get(
  */
 int bt_mesh_light_hsl_range_set(
 	struct bt_mesh_light_hsl_cli *cli, struct bt_mesh_msg_ctx *ctx,
-	const struct bt_mesh_hsl_range_set *set,
-	struct bt_mesh_hsl_range_status *rsp);
+	const struct bt_mesh_light_hsl_range_set *set,
+	struct bt_mesh_light_hsl_range_status *rsp);
 
 /** @brief Set the HSL Range of the server without requesting a
  * response.
@@ -353,7 +353,7 @@ int bt_mesh_light_hsl_range_set(
  */
 int bt_mesh_light_hsl_range_set_unack(
 	struct bt_mesh_light_hsl_cli *cli, struct bt_mesh_msg_ctx *ctx,
-	const struct bt_mesh_hsl_range_set *set);
+	const struct bt_mesh_light_hsl_range_set *set);
 
 /** @brief Get the Light HSL Hue state of the bound server.
  *
@@ -376,7 +376,7 @@ int bt_mesh_light_hsl_range_set_unack(
  */
 int bt_mesh_light_hsl_hue_get(struct bt_mesh_light_hsl_cli *cli,
 			  struct bt_mesh_msg_ctx *ctx,
-			  struct bt_mesh_hsl_hue_status *rsp);
+			  struct bt_mesh_light_hsl_hue_status *rsp);
 
 /** @brief Set the HSL Hue state of the server.
  *
@@ -400,8 +400,8 @@ int bt_mesh_light_hsl_hue_get(struct bt_mesh_light_hsl_cli *cli,
  */
 int bt_mesh_light_hsl_hue_set(struct bt_mesh_light_hsl_cli *cli,
 			  struct bt_mesh_msg_ctx *ctx,
-			  const struct bt_mesh_hsl_hue_set *set,
-			  struct bt_mesh_hsl_hue_status *rsp);
+			  const struct bt_mesh_light_hsl_hue_set *set,
+			  struct bt_mesh_light_hsl_hue_status *rsp);
 
 /** @brief Set the HSL Hue state of the server without requesting a response.
  *
@@ -419,7 +419,7 @@ int bt_mesh_light_hsl_hue_set(struct bt_mesh_light_hsl_cli *cli,
  */
 int bt_mesh_light_hsl_hue_set_unack(struct bt_mesh_light_hsl_cli *cli,
 				struct bt_mesh_msg_ctx *ctx,
-				const struct bt_mesh_hsl_hue_set *set);
+				const struct bt_mesh_light_hsl_hue_set *set);
 
 /** @brief Get the Light HSL Saturation state of the bound server.
  *
@@ -442,7 +442,7 @@ int bt_mesh_light_hsl_hue_set_unack(struct bt_mesh_light_hsl_cli *cli,
  */
 int bt_mesh_light_hsl_saturation_get(struct bt_mesh_light_hsl_cli *cli,
 			  struct bt_mesh_msg_ctx *ctx,
-			  struct bt_mesh_hsl_hue_status *rsp);
+			  struct bt_mesh_light_hsl_hue_status *rsp);
 
 /** @brief Set the HSL Saturation state of the server.
  *
@@ -466,8 +466,8 @@ int bt_mesh_light_hsl_saturation_get(struct bt_mesh_light_hsl_cli *cli,
  */
 int bt_mesh_light_hsl_saturation_set(struct bt_mesh_light_hsl_cli *cli,
 			  struct bt_mesh_msg_ctx *ctx,
-			  const struct bt_mesh_hsl_hue_set *set,
-			  struct bt_mesh_hsl_hue_status *rsp);
+			  const struct bt_mesh_light_hsl_hue_set *set,
+			  struct bt_mesh_light_hsl_hue_status *rsp);
 
 /** @brief Set the HSL Saturation state of the server without requesting a response.
  *
@@ -485,7 +485,7 @@ int bt_mesh_light_hsl_saturation_set(struct bt_mesh_light_hsl_cli *cli,
  */
 int bt_mesh_light_hsl_saturation_set_unack(struct bt_mesh_light_hsl_cli *cli,
 				struct bt_mesh_msg_ctx *ctx,
-				const struct bt_mesh_hsl_hue_set *set);
+				const struct bt_mesh_light_hsl_hue_set *set);
 
 /** @cond INTERNAL_HIDDEN */
 extern const struct bt_mesh_model_op _bt_mesh_light_hsl_cli_op[];

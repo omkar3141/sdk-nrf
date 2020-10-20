@@ -11,9 +11,9 @@
 #include "model_utils.h"
 
 static void encode_status(struct net_buf_simple *buf,
-			  struct bt_mesh_hsl_hue_status *status)
+			  struct bt_mesh_light_hsl_hue_status *status)
 {
-	bt_mesh_model_msg_init(buf, BT_MESH_HSL_SATURATION_STATUS);
+	bt_mesh_model_msg_init(buf, BT_MESH_LIGHT_HSL_SATURATION_STATUS);
 	net_buf_simple_add_le16(buf, status->current);
 
 	if (status->remaining_time != 0) {
@@ -25,10 +25,10 @@ static void encode_status(struct net_buf_simple *buf,
 
 static void rsp_status(struct bt_mesh_model *model,
 		       struct bt_mesh_msg_ctx *rx_ctx,
-		       struct bt_mesh_hsl_hue_status *status)
+		       struct bt_mesh_light_hsl_hue_status *status)
 {
-	BT_MESH_MODEL_BUF_DEFINE(msg, BT_MESH_HSL_SATURATION_STATUS,
-				 BT_MESH_HSL_MSG_MAXLEN_HUE_STATUS);
+	BT_MESH_MODEL_BUF_DEFINE(msg, BT_MESH_LIGHT_HSL_SATURATION_STATUS,
+				 BT_MESH_LIGHT_HSL_MSG_MAXLEN_HUE_STATUS);
 	encode_status(&msg, status);
 
 	(void)bt_mesh_model_send(model, rx_ctx, &msg, NULL, NULL);
@@ -38,14 +38,14 @@ static void saturation_set(struct bt_mesh_model *model,
 			   struct bt_mesh_msg_ctx *ctx,
 			   struct net_buf_simple *buf, bool ack)
 {
-	if (buf->len != BT_MESH_HSL_MSG_MINLEN_HUE &&
-	    buf->len != BT_MESH_HSL_MSG_MAXLEN_HUE) {
+	if (buf->len != BT_MESH_LIGHT_HSL_MSG_MINLEN_HUE &&
+	    buf->len != BT_MESH_LIGHT_HSL_MSG_MAXLEN_HUE) {
 		return;
 	}
 
-	struct bt_mesh_hsl_sat_srv *srv = model->user_data;
-	struct bt_mesh_hsl_hue_set set;
-	struct bt_mesh_hsl_hue_status status = { 0 };
+	struct bt_mesh_light_hsl_sat_srv *srv = model->user_data;
+	struct bt_mesh_light_hsl_hue_set set;
+	struct bt_mesh_light_hsl_hue_status status = { 0 };
 	struct bt_mesh_model_transition transition;
 
 	set_saturation(srv, net_buf_simple_pull_le16(buf));
@@ -80,7 +80,7 @@ static void saturation_set(struct bt_mesh_model *model,
 		.remaining_time = status.remaining_time,
 	};
 
-	(void)bt_mesh_hsl_sat_srv_pub(srv, NULL, &status);
+	(void)bt_mesh_light_hsl_sat_srv_pub(srv, NULL, &status);
 	(void)bt_mesh_lvl_srv_pub(&srv->lvl, NULL, &lvl_status);
 respond:
 	if (ack) {
@@ -92,12 +92,12 @@ static void saturation_get_handle(struct bt_mesh_model *model,
 				  struct bt_mesh_msg_ctx *ctx,
 				  struct net_buf_simple *buf)
 {
-	if (buf->len != BT_MESH_HSL_MSG_LEN_GET) {
+	if (buf->len != BT_MESH_LIGHT_HSL_MSG_LEN_GET) {
 		return;
 	}
 
-	struct bt_mesh_hsl_sat_srv *srv = model->user_data;
-	struct bt_mesh_hsl_hue_status status = { 0 };
+	struct bt_mesh_light_hsl_sat_srv *srv = model->user_data;
+	struct bt_mesh_light_hsl_hue_status status = { 0 };
 
 	srv->handlers->get(srv, ctx, &status);
 	rsp_status(model, ctx, &status);
@@ -117,12 +117,12 @@ static void saturation_set_unack_handle(struct bt_mesh_model *model,
 	saturation_set(model, ctx, buf, false);
 }
 
-const struct bt_mesh_model_op _bt_mesh_hsl_sat_srv_op[] = {
-	{ BT_MESH_HSL_SATURATION_GET, BT_MESH_HSL_MSG_LEN_GET,
+const struct bt_mesh_model_op _bt_mesh_light_hsl_sat_srv_op[] = {
+	{ BT_MESH_LIGHT_HSL_SATURATION_GET, BT_MESH_LIGHT_HSL_MSG_LEN_GET,
 	  saturation_get_handle },
-	{ BT_MESH_HSL_SATURATION_SET, BT_MESH_HSL_MSG_MINLEN_HUE,
+	{ BT_MESH_LIGHT_HSL_SATURATION_SET, BT_MESH_LIGHT_HSL_MSG_MINLEN_HUE,
 	  saturation_set_handle },
-	{ BT_MESH_HSL_SATURATION_SET_UNACK, BT_MESH_HSL_MSG_MINLEN_HUE,
+	{ BT_MESH_LIGHT_HSL_SATURATION_SET_UNACK, BT_MESH_LIGHT_HSL_MSG_MINLEN_HUE,
 	  saturation_set_unack_handle },
 	BT_MESH_MODEL_OP_END,
 };
@@ -130,9 +130,9 @@ const struct bt_mesh_model_op _bt_mesh_hsl_sat_srv_op[] = {
 static void lvl_get(struct bt_mesh_lvl_srv *lvl_srv,
 		    struct bt_mesh_msg_ctx *ctx, struct bt_mesh_lvl_status *rsp)
 {
-	struct bt_mesh_hsl_sat_srv *srv =
-		CONTAINER_OF(lvl_srv, struct bt_mesh_hsl_sat_srv, lvl);
-	struct bt_mesh_hsl_hue_status status = { 0 };
+	struct bt_mesh_light_hsl_sat_srv *srv =
+		CONTAINER_OF(lvl_srv, struct bt_mesh_light_hsl_sat_srv, lvl);
+	struct bt_mesh_light_hsl_hue_status status = { 0 };
 
 	srv->handlers->get(srv, NULL, &status);
 
@@ -146,10 +146,10 @@ static void lvl_set(struct bt_mesh_lvl_srv *lvl_srv,
 		    const struct bt_mesh_lvl_set *lvl_set,
 		    struct bt_mesh_lvl_status *rsp)
 {
-	struct bt_mesh_hsl_sat_srv *srv =
-		CONTAINER_OF(lvl_srv, struct bt_mesh_hsl_sat_srv, lvl);
-	struct bt_mesh_hsl_hue_set set;
-	struct bt_mesh_hsl_hue_status status = { 0 };
+	struct bt_mesh_light_hsl_sat_srv *srv =
+		CONTAINER_OF(lvl_srv, struct bt_mesh_light_hsl_sat_srv, lvl);
+	struct bt_mesh_light_hsl_hue_set set;
+	struct bt_mesh_light_hsl_hue_status status = { 0 };
 
 	uint16_t saturation = LVL_TO_SATUR(lvl_set->lvl);
 
@@ -163,7 +163,7 @@ static void lvl_set(struct bt_mesh_lvl_srv *lvl_srv,
 		srv->handlers->get(srv, NULL, &status);
 	}
 
-	(void)bt_mesh_hsl_sat_srv_pub(srv, NULL, &status);
+	(void)bt_mesh_light_hsl_sat_srv_pub(srv, NULL, &status);
 
 	if (rsp) {
 		rsp->current = SATUR_TO_LVL(status.current);
@@ -177,10 +177,10 @@ static void lvl_delta_set(struct bt_mesh_lvl_srv *lvl_srv,
 			  const struct bt_mesh_lvl_delta_set *delta_set,
 			  struct bt_mesh_lvl_status *rsp)
 {
-	struct bt_mesh_hsl_sat_srv *srv =
-		CONTAINER_OF(lvl_srv, struct bt_mesh_hsl_sat_srv, lvl);
-	struct bt_mesh_hsl_hue_set set;
-	struct bt_mesh_hsl_hue_status status = { 0 };
+	struct bt_mesh_light_hsl_sat_srv *srv =
+		CONTAINER_OF(lvl_srv, struct bt_mesh_light_hsl_sat_srv, lvl);
+	struct bt_mesh_light_hsl_hue_set set;
+	struct bt_mesh_light_hsl_hue_status status = { 0 };
 
 	int16_t start_value = SATUR_TO_LVL(srv->satur_last);
 	int16_t target_value;
@@ -209,7 +209,7 @@ static void lvl_delta_set(struct bt_mesh_lvl_srv *lvl_srv,
 	 */
 	srv->satur_last = LVL_TO_SATUR(start_value);
 
-	(void)bt_mesh_hsl_sat_srv_pub(srv, NULL, &status);
+	(void)bt_mesh_light_hsl_sat_srv_pub(srv, NULL, &status);
 
 	if (rsp) {
 		rsp->current = SATUR_TO_LVL(status.current);
@@ -223,9 +223,9 @@ static void lvl_move_set(struct bt_mesh_lvl_srv *lvl_srv,
 			 const struct bt_mesh_lvl_move_set *move_set,
 			 struct bt_mesh_lvl_status *rsp)
 {
-	struct bt_mesh_hsl_sat_srv *srv =
-		CONTAINER_OF(lvl_srv, struct bt_mesh_hsl_sat_srv, lvl);
-	struct bt_mesh_hsl_hue_status status = { 0 };
+	struct bt_mesh_light_hsl_sat_srv *srv =
+		CONTAINER_OF(lvl_srv, struct bt_mesh_light_hsl_sat_srv, lvl);
+	struct bt_mesh_light_hsl_hue_status status = { 0 };
 	uint16_t target;
 
 	srv->handlers->get(srv, NULL, &status);
@@ -239,7 +239,7 @@ static void lvl_move_set(struct bt_mesh_lvl_srv *lvl_srv,
 	}
 
 	struct bt_mesh_model_transition transition;
-	struct bt_mesh_hsl_hue_set set = {
+	struct bt_mesh_light_hsl_hue_set set = {
 		.level = target,
 		.transition = &transition,
 	};
@@ -265,7 +265,7 @@ static void lvl_move_set(struct bt_mesh_lvl_srv *lvl_srv,
 	}
 }
 
-const struct bt_mesh_lvl_srv_handlers _bt_mesh_hsl_sat_srv_lvl_handlers = {
+const struct bt_mesh_lvl_srv_handlers _bt_mesh_light_hsl_sat_srv_lvl_handlers = {
 	.get = lvl_get,
 	.set = lvl_set,
 	.delta_set = lvl_delta_set,
@@ -274,7 +274,7 @@ const struct bt_mesh_lvl_srv_handlers _bt_mesh_hsl_sat_srv_lvl_handlers = {
 
 static int bt_mesh_light_hsl_sat_srv_init(struct bt_mesh_model *model)
 {
-	struct bt_mesh_hsl_sat_srv *srv = model->user_data;
+	struct bt_mesh_light_hsl_sat_srv *srv = model->user_data;
 
 	srv->model = model;
 	net_buf_simple_init(srv->pub.msg, 0);
@@ -286,16 +286,16 @@ static int bt_mesh_light_hsl_sat_srv_init(struct bt_mesh_model *model)
 	return 0;
 }
 
-const struct bt_mesh_model_cb _bt_mesh_hsl_sat_srv_cb = {
+const struct bt_mesh_model_cb _bt_mesh_light_hsl_sat_srv_cb = {
 	.init = bt_mesh_light_hsl_sat_srv_init,
 };
 
-int32_t bt_mesh_hsl_sat_srv_pub(struct bt_mesh_hsl_sat_srv *srv,
+int32_t bt_mesh_light_hsl_sat_srv_pub(struct bt_mesh_light_hsl_sat_srv *srv,
 				struct bt_mesh_msg_ctx *ctx,
-				struct bt_mesh_hsl_hue_status *status)
+				struct bt_mesh_light_hsl_hue_status *status)
 {
-	BT_MESH_MODEL_BUF_DEFINE(msg, BT_MESH_HSL_SATURATION_STATUS,
-				 BT_MESH_HSL_MSG_MAXLEN_HUE_STATUS);
+	BT_MESH_MODEL_BUF_DEFINE(msg, BT_MESH_LIGHT_HSL_SATURATION_STATUS,
+				 BT_MESH_LIGHT_HSL_MSG_MAXLEN_HUE_STATUS);
 	encode_status(&msg, status);
 	return model_send(srv->model, ctx, &msg);
 }

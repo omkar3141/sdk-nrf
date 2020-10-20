@@ -20,7 +20,7 @@
 #define LVL_TO_HUE(_lvl) ((_lvl) + 32768)
 #define HUE_TO_LVL(_hue) ((_hue) - 32768)
 
-static inline uint16_t set_saturation(struct bt_mesh_hsl_sat_srv *srv,
+static inline uint16_t set_saturation(struct bt_mesh_light_hsl_sat_srv *srv,
 				uint16_t satur_val)
 {
 	if (satur_val < srv->range.min) {
@@ -32,7 +32,7 @@ static inline uint16_t set_saturation(struct bt_mesh_hsl_sat_srv *srv,
 	}
 }
 
-static inline uint16_t set_hue(struct bt_mesh_hsl_hue_srv *srv,
+static inline uint16_t set_hue(struct bt_mesh_light_hsl_hue_srv *srv,
 				uint16_t hue_val)
 {
 	if (hue_val < srv->range.min) {
