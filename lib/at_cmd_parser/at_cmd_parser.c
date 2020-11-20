@@ -31,6 +31,8 @@ enum at_parser_state {
 
 static enum at_parser_state state;
 
+static bool setTypeString = false;
+
 static inline void set_new_state(enum at_parser_state new_state)
 {
 	state = new_state;
@@ -61,6 +63,21 @@ static int at_parse_detect_type(const char **str, int index)
 		 * notification ID, (eg +CEREG:)
 		 */
 		set_new_state(NOTIFICATION);
+
+		if (!strncmp(tmpstr, "%HWVERSION", 10)) {
+				setTypeString = true;
+		}
+		if (!strncmp(tmpstr, "%SHORTSWVER", 11)) {
+				setTypeString = true;
+		}
+		if (!strncmp(tmpstr, "%XMODEMUUID", 11)) {
+				setTypeString = true;
+		}
+		if (!strncmp(tmpstr, "%XICCID", 7)) {
+				setTypeString = true;
+		}
+	} else if (setTypeString) {
+		set_new_state(STRING);
 	} else if ((index == 0) && is_command(tmpstr)) {
 		/* Next, check if we deal with command (eg AT+CCLK) */
 		set_new_state(COMMAND);
@@ -250,6 +267,8 @@ static int at_parse_param(const char **at_params_str,
 	bool oversized = false;
 
 	reset_state();
+
+	setTypeString = false;
 
 	while ((!is_terminated(*str)) && (index < max_params)) {
 		if (isspace((int)*str)) {
