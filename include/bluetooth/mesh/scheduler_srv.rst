@@ -155,8 +155,8 @@ The Scheduler Server stores the following information:
 
 This information is used to restore previously configured register entries when the device powers up.
 
-As scheduler operation depends upon the availability of the updated current time provided by the Time Server,
-it is application's responsibility to call :cpp:func:`bt_mesh_scheduler_srv_time_update` after current local
+The scheduler operation depends on the availability of the updated current time provided by the Time Server.
+It is the application's responsibility to call :c:func:`bt_mesh_scheduler_srv_time_update` after the current local
 time has been updated to schedule available entries correctly.
 
 API documentation

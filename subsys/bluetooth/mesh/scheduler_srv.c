@@ -23,13 +23,7 @@
 #define MAX_DAY        0x1F
 #define JANUARY           0
 #define DECEMBER         11
-
-
 #define ENTRY_BASE_KEY	'A'
-
-struct settings_data {
-	struct bt_mesh_schedule_entry entry;
-} __packed;
 
 static bool set_year(struct tm *sched_time,
 		     struct tm *current_local,
@@ -56,21 +50,13 @@ static bool set_second(struct tm *sched_time,
 
 static int store(struct bt_mesh_scheduler_srv *srv, uint8_t idx)
 {
-	char name[2] = {0};
+	char name[3] = {0};
 
-	if (!IS_ENABLED(CONFIG_BT_SETTINGS)) {
-		return 0;
-	}
+	snprintf(name, sizeof(name), "%x", idx);
 
-	name[0] = ENTRY_BASE_KEY + idx;
-	BT_DBG("name %s, idx %d", name, idx);
-
-	struct settings_data data = {
-		.entry = srv->sch_reg[idx]
-	};
-
-	return bt_mesh_model_data_store(srv->model, false, name, &data,
-					sizeof(data));
+	BT_DBG("name %s idx %d", name, idx);
+	return bt_mesh_model_data_store(srv->model, false, name, &srv->sch_reg[idx],
+					sizeof(srv->sch_reg[idx]));
 }
 
 static bool revise_year(struct tm *sched_time,
@@ -613,7 +599,9 @@ static void action_set(struct bt_mesh_model *model,
 		srv->action_set_cb(srv, ctx, idx, &srv->sch_reg[idx]);
 	}
 
-	store(srv, idx);
+	if (IS_ENABLED(CONFIG_BT_SETTINGS)) {
+		store(srv, idx);
+	}
 
 	/* publish state changing */
 	send_scheduler_action_status(model, NULL, idx);
@@ -744,33 +732,41 @@ static void scheduler_srv_reset(struct bt_mesh_model *model)
 	srv->status_bitmap = 0;
 	k_delayed_work_cancel(&srv->delayed_work);
 	net_buf_simple_reset(srv->pub.msg);
+
+	memset(&srv->sch_reg, 0, sizeof(srv->sch_reg));
+	for (int idx = 0; idx < BT_MESH_SCHEDULER_ACTION_ENTRY_COUNT; ++idx) {
+		store(srv, idx);
+	}
 }
 
+#ifdef CONFIG_BT_SETTINGS
 static int scheduler_srv_settings_set(struct bt_mesh_model *model,
 				      const char *name,
 				      size_t len_rd, settings_read_cb read_cb,
 				      void *cb_data)
 {
 	struct bt_mesh_scheduler_srv *srv = model->user_data;
-	struct settings_data data;
-
+	struct bt_mesh_schedule_entry data;
 	ssize_t len = read_cb(cb_data, &data, sizeof(data));
-	uint8_t idx = name[0] - ENTRY_BASE_KEY;
+	uint8_t idx = strtol(name, NULL, 0);
 
+	BT_DBG("name %s idx %d", name, idx);
 	if (len < sizeof(data) || idx >= BT_MESH_SCHEDULER_ACTION_ENTRY_COUNT) {
 		return -EINVAL;
 	}
 
-	BT_DBG("name %s, idx %d", name, idx);
-	srv->sch_reg[idx] = data.entry;
+	srv->sch_reg[idx] = data;
 
 	return 0;
 }
+#endif
 
 const struct bt_mesh_model_cb _bt_mesh_scheduler_srv_cb = {
 	.init = scheduler_srv_init,
 	.reset = scheduler_srv_reset,
+#ifdef CONFIG_BT_SETTINGS
 	.settings_set = scheduler_srv_settings_set
+#endif
 };
 
 int bt_mesh_scheduler_srv_time_update(struct bt_mesh_scheduler_srv *srv)
@@ -785,4 +781,27 @@ int bt_mesh_scheduler_srv_time_update(struct bt_mesh_scheduler_srv *srv)
 
 	run_scheduler(srv);
 	return 0;
+}
+
+int bt_mesh_scheduler_srv_backdoor(struct bt_mesh_scheduler_srv *srv)
+{
+    srv->sch_reg[0].year = BT_MESH_SCHEDULER_ANY_YEAR;
+    srv->sch_reg[0].month = BT_MESH_SCHEDULER_JAN |
+        BT_MESH_SCHEDULER_FEB | BT_MESH_SCHEDULER_MAR | BT_MESH_SCHEDULER_APR |
+        BT_MESH_SCHEDULER_MAY | BT_MESH_SCHEDULER_JUN | BT_MESH_SCHEDULER_JUL |
+        BT_MESH_SCHEDULER_AUG | BT_MESH_SCHEDULER_SEP | BT_MESH_SCHEDULER_OCT |
+        BT_MESH_SCHEDULER_NOV | BT_MESH_SCHEDULER_DEC;
+    srv->sch_reg[0].day = BT_MESH_SCHEDULER_ANY_DAY;
+    srv->sch_reg[0].day_of_week = BT_MESH_SCHEDULER_MON | BT_MESH_SCHEDULER_TUE |
+        BT_MESH_SCHEDULER_WED | BT_MESH_SCHEDULER_THU | BT_MESH_SCHEDULER_FRI |
+        BT_MESH_SCHEDULER_SAT | BT_MESH_SCHEDULER_SUN;
+    srv->sch_reg[0].hour = BT_MESH_SCHEDULER_ANY_HOUR;
+    srv->sch_reg[0].minute = BT_MESH_SCHEDULER_ANY_MINUTE;
+    srv->sch_reg[0].second = BT_MESH_SCHEDULER_EVERY_15_SECONDS;
+    srv->sch_reg[0].action = BT_MESH_SCHEDULER_SCENE_RECALL;
+    srv->sch_reg[0].transition_time = 0;
+    srv->sch_reg[0].scene_number = 1;
+    schedule_action(srv, 0);
+    run_scheduler(srv);
+    return 0;
 }
