@@ -748,9 +748,10 @@ static int scheduler_srv_settings_set(struct bt_mesh_model *model,
 	struct bt_mesh_scheduler_srv *srv = model->user_data;
 	struct bt_mesh_schedule_entry data;
 	ssize_t len = read_cb(cb_data, &data, sizeof(data));
-	uint8_t idx = strtol(name, NULL, 0);
+	uint8_t idx = strtol(name, NULL, 16);
 
 	BT_DBG("name %s idx %d", name, idx);
+
 	if (len < sizeof(data) || idx >= BT_MESH_SCHEDULER_ACTION_ENTRY_COUNT) {
 		return -EINVAL;
 	}
