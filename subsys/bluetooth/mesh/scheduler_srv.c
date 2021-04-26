@@ -48,15 +48,15 @@ static bool set_second(struct tm *sched_time,
 		       struct bt_mesh_schedule_entry *entry,
 		       struct bt_mesh_time_srv *srv);
 
-static int store(struct bt_mesh_scheduler_srv *srv, uint8_t idx)
+static int store(struct bt_mesh_scheduler_srv *srv, uint8_t idx, bool delete)
 {
 	char name[3] = {0};
+	const void *data = delete ? NULL : &srv->sch_reg[idx];
+	size_t len = delete ? 0 : sizeof(srv->sch_reg[idx]);
 
 	snprintf(name, sizeof(name), "%x", idx);
 
-	BT_DBG("name %s idx %d", name, idx);
-	return bt_mesh_model_data_store(srv->model, false, name, &srv->sch_reg[idx],
-					sizeof(srv->sch_reg[idx]));
+	return bt_mesh_model_data_store(srv->model, false, name, data, len);
 }
 
 static bool revise_year(struct tm *sched_time,
@@ -734,8 +734,11 @@ static void scheduler_srv_reset(struct bt_mesh_model *model)
 	net_buf_simple_reset(srv->pub.msg);
 
 	memset(&srv->sch_reg, 0, sizeof(srv->sch_reg));
-	for (int idx = 0; idx < BT_MESH_SCHEDULER_ACTION_ENTRY_COUNT; ++idx) {
-		store(srv, idx);
+	if (IS_ENABLED(CONFIG_BT_SETTINGS)) {
+		for (int idx = 0; idx < BT_MESH_SCHEDULER_ACTION_ENTRY_COUNT;
+		     ++idx) {
+			store(srv, idx);
+		}
 	}
 }
 
@@ -749,8 +752,6 @@ static int scheduler_srv_settings_set(struct bt_mesh_model *model,
 	struct bt_mesh_schedule_entry data;
 	ssize_t len = read_cb(cb_data, &data, sizeof(data));
 	uint8_t idx = strtol(name, NULL, 16);
-
-	BT_DBG("name %s idx %d", name, idx);
 
 	if (len < sizeof(data) || idx >= BT_MESH_SCHEDULER_ACTION_ENTRY_COUNT) {
 		return -EINVAL;
