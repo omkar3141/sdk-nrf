@@ -48,11 +48,11 @@ static bool set_second(struct tm *sched_time,
 		       struct bt_mesh_schedule_entry *entry,
 		       struct bt_mesh_time_srv *srv);
 
-static int store(struct bt_mesh_scheduler_srv *srv, uint8_t idx, bool delete)
+static int store(struct bt_mesh_scheduler_srv *srv, uint8_t idx, bool store_ndel)
 {
 	char name[3] = {0};
-	const void *data = delete ? NULL : &srv->sch_reg[idx];
-	size_t len = delete ? 0 : sizeof(srv->sch_reg[idx]);
+	const void *data = store_ndel ? &srv->sch_reg[idx] : NULL;
+	size_t len = store_ndel ? sizeof(srv->sch_reg[idx]) : 0;
 
 	snprintf(name, sizeof(name), "%x", idx);
 
@@ -600,7 +600,7 @@ static void action_set(struct bt_mesh_model *model,
 	}
 
 	if (IS_ENABLED(CONFIG_BT_SETTINGS)) {
-		store(srv, idx);
+		store(srv, idx, true);
 	}
 
 	/* publish state changing */
@@ -733,11 +733,10 @@ static void scheduler_srv_reset(struct bt_mesh_model *model)
 	k_delayed_work_cancel(&srv->delayed_work);
 	net_buf_simple_reset(srv->pub.msg);
 
-	memset(&srv->sch_reg, 0, sizeof(srv->sch_reg));
 	if (IS_ENABLED(CONFIG_BT_SETTINGS)) {
 		for (int idx = 0; idx < BT_MESH_SCHEDULER_ACTION_ENTRY_COUNT;
 		     ++idx) {
-			store(srv, idx);
+			store(srv, idx, false);
 		}
 	}
 }
