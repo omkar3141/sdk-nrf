@@ -60,6 +60,32 @@ static void send_message_reply(struct bt_mesh_chat_cli *chat,
 	(void)bt_mesh_model_send(chat->model, ctx, &msg, NULL, NULL);
 }
 
+//customer defined function to automate bidirectonal chat messaging
+static void process_custom_message(struct bt_mesh_chat_cli *chat,
+                                   struct bt_mesh_msg_ctx *ctx,
+                                   const uint8_t *msg)
+{
+        int err=0;
+
+	if(strcmp(msg, MSG_FOR_DEVICE_B) == 0)
+        {            
+            err = bt_mesh_chat_cli_private_message_send(chat, (uint16_t)ADDR_DEVICE_A, MSG_FOR_DEVICE_A);            
+        }
+        else if(strcmp(msg, MSG_FOR_DEVICE_A) == 0)
+        {            
+            err = bt_mesh_chat_cli_private_message_send(chat, (uint16_t)ADDR_DEVICE_B, MSG_FOR_DEVICE_B);            
+        }
+        else
+        {
+            printk("process_custom_message(): received invalid message \"%s\"\n", msg);
+        }
+
+        if (err) {
+		LOG_WRN("Failed to publish message: %d", err);
+                printk("process_custom_message(): Failed to publish message: %d\n", err);
+	}
+}
+
 static void handle_private_message(struct bt_mesh_model *model,
 				  struct bt_mesh_msg_ctx *ctx,
 				  struct net_buf_simple *buf)
@@ -74,6 +100,11 @@ static void handle_private_message(struct bt_mesh_model *model,
 	}
 
 	send_message_reply(chat, ctx);
+
+#ifdef BI_DIRIECTIONAL //customer: custom function execution if BI_DIRIECTIONAL Is defined
+        //call to process received message and send back message to the source device
+        process_custom_message(chat, ctx, msg);
+#endif
 }
 /* .. include_endpoint_chat_cli_rst_1 */
 
@@ -86,6 +117,15 @@ static void handle_message_reply(struct bt_mesh_model *model,
 	if (chat->handlers->message_reply) {
 		chat->handlers->message_reply(chat, ctx);
 	}
+#ifndef BI_DIRIECTIONAL //Sanju: custom code execution if BI_DIRIECTIONAL Not defined
+        int err;
+
+        err = bt_mesh_chat_cli_private_message_send(chat, (uint16_t)ADDR_DEVICE_B, MSG_FOR_DEVICE_B);
+        if (err) {
+		LOG_WRN("W: handle_message_reply(): Failed to publish message post handling reply: %d\n", err);
+                printk("M: handle_message_reply(): Failed to publish message post handling reply: %d\n", err);
+	}
+#endif
 }
 
 static void handle_presence(struct bt_mesh_model *model,

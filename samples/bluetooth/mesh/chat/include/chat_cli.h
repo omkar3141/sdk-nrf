@@ -14,6 +14,14 @@
 #ifndef BT_MESH_CHAT_CLI_H__
 #define BT_MESH_CHAT_CLI_H__
 
+/*-- customer added custom macros --------*/
+#define ADDR_DEVICE_A 0x0003
+#define ADDR_DEVICE_B 0x0004
+#define MSG_FOR_DEVICE_A "Hello-012345"
+#define MSG_FOR_DEVICE_B "Hi-876543210"
+#define BI_DIRIECTIONAL
+/*-------------------------------------*/
+
 #include <bluetooth/mesh.h>
 #include <bluetooth/mesh/model_types.h>
 
