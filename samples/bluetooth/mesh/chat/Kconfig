@@ -26,6 +26,12 @@ config BT_MESH_CHAT_SAMPLE_PRESENCE_CACHE_SIZE
 	  Presence cache stores previously received presence of chat clients.
 	  Recommended to be as big as number of chat clients in the mesh network.
 
+config DEV_UNICAST_ADDR
+       	hex "Default unicast address"
+       	default 0
+       	help
+ 	  Used for debug purposes. Must be set manually to non-zero value.
+
 endmenu
 
 module = BT_MESH_CHAT_CLI

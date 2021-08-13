@@ -117,7 +117,7 @@ static void handle_message_reply(struct bt_mesh_model *model,
 	if (chat->handlers->message_reply) {
 		chat->handlers->message_reply(chat, ctx);
 	}
-#ifndef BI_DIRIECTIONAL //Sanju: custom code execution if BI_DIRIECTIONAL Not defined
+#ifndef BI_DIRIECTIONAL //customer: custom code execution if BI_DIRIECTIONAL Not defined
         int err;
 
         err = bt_mesh_chat_cli_private_message_send(chat, (uint16_t)ADDR_DEVICE_B, MSG_FOR_DEVICE_B);

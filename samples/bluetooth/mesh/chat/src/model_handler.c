@@ -223,13 +223,20 @@ static struct bt_mesh_chat_cli chat = {
 	.handlers = &chat_handlers,
 };
 
+static struct bt_mesh_model models_sig[] = {
+	BT_MESH_MODEL_CFG_SRV,
+	BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub)
+};
+
+struct bt_mesh_model models_vnd[] = {
+	BT_MESH_MODEL_CHAT_CLI(&chat)
+};
+
 static struct bt_mesh_elem elements[] = {
 	BT_MESH_ELEM(
 		1,
-		BT_MESH_MODEL_LIST(
-			BT_MESH_MODEL_CFG_SRV,
-			BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub)),
-		BT_MESH_MODEL_LIST(BT_MESH_MODEL_CHAT_CLI(&chat))),
+		models_sig,
+		models_vnd),
 };
 /* .. include_endpoint_model_handler_rst_1 */
 
