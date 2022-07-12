@@ -30,9 +30,13 @@ static void status_handler(struct bt_mesh_onoff_cli *cli,
 			   struct bt_mesh_msg_ctx *ctx,
 			   const struct bt_mesh_onoff_status *status);
 
+static int publish_handler(struct bt_mesh_model *mod);
+
 static struct button buttons[] = {
 #if DT_NODE_EXISTS(DT_ALIAS(sw0))
-	{ .client = BT_MESH_ONOFF_CLI_INIT(&status_handler) },
+	{ .client = BT_MESH_ONOFF_CLI_INIT(&status_handler),
+	  .client = {.pub.update = publish_handler}
+	  },
 #endif
 #if DT_NODE_EXISTS(DT_ALIAS(sw1))
 	{ .client = BT_MESH_ONOFF_CLI_INIT(&status_handler) },
@@ -44,6 +48,19 @@ static struct button buttons[] = {
 	{ .client = BT_MESH_ONOFF_CLI_INIT(&status_handler) },
 #endif
 };
+
+static int publish_handler(struct bt_mesh_model *mod)
+{
+	static int onoff = 0;
+	struct bt_mesh_onoff_cli *cli = mod->user_data;
+
+	net_buf_simple_reset(mod->pub->msg);
+	bt_mesh_model_msg_init(mod->pub->msg, BT_MESH_ONOFF_OP_SET_UNACK);
+	net_buf_simple_add_u8(mod->pub->msg, onoff++ & 1);
+	net_buf_simple_add_u8(mod->pub->msg, cli->tid++);
+
+	return 0;
+}
 
 static void status_handler(struct bt_mesh_onoff_cli *cli,
 			   struct bt_mesh_msg_ctx *ctx,
@@ -165,24 +182,24 @@ static struct bt_mesh_elem elements[] = {
 			     BT_MESH_MODEL_ONOFF_CLI(&buttons[0].client)),
 		     BT_MESH_MODEL_NONE),
 #endif
-#if DT_NODE_EXISTS(DT_ALIAS(sw1))
-	BT_MESH_ELEM(2,
-		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_ONOFF_CLI(&buttons[1].client)),
-		     BT_MESH_MODEL_NONE),
-#endif
-#if DT_NODE_EXISTS(DT_ALIAS(sw2))
-	BT_MESH_ELEM(3,
-		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_ONOFF_CLI(&buttons[2].client)),
-		     BT_MESH_MODEL_NONE),
-#endif
-#if DT_NODE_EXISTS(DT_ALIAS(sw3))
-	BT_MESH_ELEM(4,
-		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_ONOFF_CLI(&buttons[3].client)),
-		     BT_MESH_MODEL_NONE),
-#endif
+// #if DT_NODE_EXISTS(DT_ALIAS(sw1))
+// 	BT_MESH_ELEM(2,
+// 		     BT_MESH_MODEL_LIST(
+// 			     BT_MESH_MODEL_ONOFF_CLI(&buttons[1].client)),
+// 		     BT_MESH_MODEL_NONE),
+// #endif
+// #if DT_NODE_EXISTS(DT_ALIAS(sw2))
+// 	BT_MESH_ELEM(3,
+// 		     BT_MESH_MODEL_LIST(
+// 			     BT_MESH_MODEL_ONOFF_CLI(&buttons[2].client)),
+// 		     BT_MESH_MODEL_NONE),
+// #endif
+// #if DT_NODE_EXISTS(DT_ALIAS(sw3))
+// 	BT_MESH_ELEM(4,
+// 		     BT_MESH_MODEL_LIST(
+// 			     BT_MESH_MODEL_ONOFF_CLI(&buttons[3].client)),
+// 		     BT_MESH_MODEL_NONE),
+// #endif
 };
 
 static const struct bt_mesh_comp comp = {
