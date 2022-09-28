@@ -68,6 +68,9 @@ k_timer sFunctionTimer;
 Identify sIdentify = { kLightEndpointId, AppTask::IdentifyStartHandler, AppTask::IdentifyStopHandler,
 		       EMBER_ZCL_IDENTIFY_IDENTIFY_TYPE_VISIBLE_LED };
 
+K_MSGQ_DEFINE(sAppEventQueue, sizeof(AppEvent), kAppEventQueueSize, alignof(AppEvent));
+k_timer sFunctionTimer;
+
 LEDWidget sStatusLED;
 LEDWidget sIdentifyLED;
 #if NUMBER_OF_LEDS == 4

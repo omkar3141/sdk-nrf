@@ -38,6 +38,8 @@
 
 LOG_MODULE_DECLARE(app, CONFIG_MATTER_LOG_LEVEL);
 
+LOG_MODULE_DECLARE(app, CONFIG_MATTER_LOG_LEVEL);
+
 using namespace ::chip;
 using namespace ::chip::app;
 using namespace ::chip::Credentials;

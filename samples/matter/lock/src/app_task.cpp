@@ -251,6 +251,7 @@ void AppTask::IdentifyStartHandler(Identify *)
 	event.Handler = [](const AppEvent &) { sLockLED.Blink(LedConsts::kIdentifyBlinkRate_ms); };
 	PostEvent(event);
 }
+#endif
 
 void AppTask::IdentifyStopHandler(Identify *)
 {
