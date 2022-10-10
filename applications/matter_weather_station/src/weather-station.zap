@@ -2842,7 +2842,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "2",
+              "defaultValue": "0",
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -4560,7 +4560,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "0x000F",
+              "defaultValue": "0xe",
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -4766,7 +4766,7 @@
               "storageOption": "RAM",
               "singleton": 0,
               "bounded": 0,
-              "defaultValue": "0",
+              "defaultValue": "1",
               "reportable": 1,
               "minInterval": 1,
               "maxInterval": 65534,
@@ -9071,7 +9071,7 @@
       "profileId": 259,
       "endpointId": 1,
       "networkId": 0,
-      "endpointVersion": 1,
+      "endpointVersion": 2,
       "deviceIdentifier": 770
     },
     {
@@ -9080,7 +9080,7 @@
       "profileId": 259,
       "endpointId": 2,
       "networkId": 0,
-      "endpointVersion": 1,
+      "endpointVersion": 2,
       "deviceIdentifier": 775
     },
     {
@@ -9089,7 +9089,7 @@
       "profileId": 259,
       "endpointId": 3,
       "networkId": 0,
-      "endpointVersion": 1,
+      "endpointVersion": 2,
       "deviceIdentifier": 773
     }
   ],

@@ -69,6 +69,16 @@ If the Bluetooth LE advertising times out, you can re-enable it manually using *
 Additionally, the controller must get the commissioning information from the Matter accessory device and provision the device into the network.
 For details, see the `Testing`_ section.
 
+Certification files for Matter SVE 1.0
+======================================
+
+The |NCS| v2.1.1 version of the application contains a dedicated :file:`certification` directory with information useful for getting to know the Matter certification process:
+
+* :file:`factory_data` directory - This directory contains a generated example of the factory data that was originally used for the weather station Matter certification.
+* :file:`PICS` directory - This directory contains Protocol Implementation Conformance Statement (PICS) that was originally used for the weather station Matter certification.
+  The PICS is a set of XML files that describe the Matter features supported by a specific device.
+* :file:`overlay-factory_data_build.conf` - This overlay file contains examples of configuration options that can be used to generate a new set of Matter device factory data.
+
 .. _matter_weather_station_app_build_types:
 
 Matter weather station build types

@@ -92,7 +92,7 @@ The Matter fork in the |NCS| (``sdk-connectedhomeip``) contains all commits from
 
 The following list summarizes the most important changes inherited from the upstream Matter:
 
-* |no_changes_yet_note|
+* Updated Matter repository to official Matter 1.0 version tag.
 
 Thread
 ------
