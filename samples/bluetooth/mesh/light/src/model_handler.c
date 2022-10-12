@@ -8,6 +8,11 @@
 #include <bluetooth/mesh/models.h>
 #include <dk_buttons_and_leds.h>
 #include "model_handler.h"
+#include <dm.h>
+
+#define BT_DBG_ENABLED (true)
+#define LOG_MODULE_NAME bt_model_handler
+#include "common/log.h"
 
 static void led_set(struct bt_mesh_onoff_srv *srv, struct bt_mesh_msg_ctx *ctx,
 		    const struct bt_mesh_onoff_set *set,
@@ -92,6 +97,20 @@ static void led_set(struct bt_mesh_onoff_srv *srv, struct bt_mesh_msg_ctx *ctx,
 	}
 
 respond:
+	/* Request distance measurement */
+	BT_INFO("DM reflector\n");
+	struct dm_request req;
+
+	req.role = DM_ROLE_REFLECTOR;
+	req.ranging_mode = DM_RANGING_MODE_MCPD;
+	req.access_address = 0xC0FFEE00;
+	req.start_delay_us = 0; /* Allow ON OFF STATUS to go out */
+	int err = dm_request_add(&req);
+	if (err) {
+		BT_INFO("dm_request_add failed\n");
+	}
+	BT_INFO("dm_request_add()\n");
+
 	if (rsp) {
 		led_status(led, rsp);
 	}
@@ -178,11 +197,15 @@ static struct bt_mesh_health_srv health_srv = {
 
 BT_MESH_HEALTH_PUB_DEFINE(health_pub, 0);
 
+static struct bt_mesh_cfg_cli cfg_cli = {
+};
+
 static struct bt_mesh_elem elements[] = {
 #if DT_NODE_EXISTS(DT_ALIAS(led0))
 	BT_MESH_ELEM(
 		1, BT_MESH_MODEL_LIST(
 			BT_MESH_MODEL_CFG_SRV,
+			BT_MESH_MODEL_CFG_CLI(&cfg_cli),
 			BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
 			BT_MESH_MODEL_ONOFF_SRV(&led_ctx[0].srv)),
 		BT_MESH_MODEL_NONE),
@@ -210,12 +233,60 @@ static const struct bt_mesh_comp comp = {
 	.elem_count = ARRAY_SIZE(elements),
 };
 
+static void print_result(struct dm_result *result)
+{
+	if (!result) {
+		return;
+	}
+
+	const char *quality[DM_QUALITY_NONE + 1] = {"ok", "poor", "do not use", "crc fail", "none"};
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	bt_addr_le_to_str(&result->bt_addr, addr, sizeof(addr));
+
+	BT_INFO("Measurement result:");
+	BT_INFO("\tAddr: %s", addr);
+	BT_INFO("\tQuality: %s", quality[result->quality]);
+
+	BT_INFO("\tDistance estimates: ");
+	if (result->ranging_mode == DM_RANGING_MODE_RTT) {
+		BT_INFO("rtt: rtt=%.2f", result->dist_estimates.rtt.rtt);
+	} else {
+		BT_INFO("mcpd: ifft=%.2f phase_slope=%.2f rssi_openspace=%.2f best=%.2f",
+			result->dist_estimates.mcpd.ifft,
+			result->dist_estimates.mcpd.phase_slope,
+			result->dist_estimates.mcpd.rssi_openspace,
+			result->dist_estimates.mcpd.best);
+	}
+}
+
+static void data_ready(struct dm_result *result)
+{
+	BT_INFO("result received");
+	if (result->status) {
+		print_result(result);
+	}
+}
+static struct dm_cb dm_cb = {
+	.data_ready = data_ready,
+};
+
 const struct bt_mesh_comp *model_handler_init(void)
 {
 	k_work_init_delayable(&attention_blink_work, attention_blink);
 
 	for (int i = 0; i < ARRAY_SIZE(led_ctx); ++i) {
 		k_work_init_delayable(&led_ctx[i].work, led_work);
+	}
+
+	/* Init DM */
+	struct dm_init_param init_param;
+
+	init_param.cb = &dm_cb;
+
+	int err = dm_init(&init_param);
+	if (err) {
+		printk("Distance measurement init failed (err %d)\n", err);
 	}
 
 	return &comp;
