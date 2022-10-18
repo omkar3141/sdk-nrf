@@ -570,7 +570,6 @@
   /* Endpoint: 0, Cluster: Network Commissioning (server) */\
   /*   AcceptedCommandList (index=10) */ \
   0x00000000 /* ScanNetworks */, \
-  0x00000002 /* AddOrUpdateWiFiNetwork */, \
   0x00000003 /* AddOrUpdateThreadNetwork */, \
   0x00000004 /* RemoveNetwork */, \
   0x00000006 /* ConnectNetwork */, \
@@ -887,7 +886,7 @@
 
 #define ZAP_CLUSTER_INDEX(index) (&generatedClusters[index])
 
-#define ZAP_FIXED_ENDPOINT_DATA_VERSION_COUNT 18
+#define ZAP_FIXED_ENDPOINT_DATA_VERSION_COUNT 17
 
 // This is an array of EmberAfEndpointType structures.
 #define GENERATED_ENDPOINT_TYPES                                                                                       \

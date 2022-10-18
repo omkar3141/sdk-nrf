@@ -680,12 +680,6 @@ server cluster NetworkCommissioning = 49 {
     optional INT64U breadcrumb = 1;
   }
 
-  request struct AddOrUpdateWiFiNetworkRequest {
-    OCTET_STRING<32> ssid = 0;
-    OCTET_STRING<64> credentials = 1;
-    optional INT64U breadcrumb = 2;
-  }
-
   request struct AddOrUpdateThreadNetworkRequest {
     OCTET_STRING<254> operationalDataset = 0;
     optional INT64U breadcrumb = 1;
@@ -727,7 +721,6 @@ server cluster NetworkCommissioning = 49 {
   }
 
   command access(invoke: administer) ScanNetworks(ScanNetworksRequest): ScanNetworksResponse = 0;
-  command access(invoke: administer) AddOrUpdateWiFiNetwork(AddOrUpdateWiFiNetworkRequest): NetworkConfigResponse = 2;
   command access(invoke: administer) AddOrUpdateThreadNetwork(AddOrUpdateThreadNetworkRequest): NetworkConfigResponse = 3;
   command access(invoke: administer) RemoveNetwork(RemoveNetworkRequest): NetworkConfigResponse = 4;
   command access(invoke: administer) ConnectNetwork(ConnectNetworkRequest): ConnectNetworkResponse = 6;

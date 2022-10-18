@@ -553,16 +553,6 @@ namespace app
 						}
 						break;
 					}
-					case Commands::AddOrUpdateWiFiNetwork::Id: {
-						Commands::AddOrUpdateWiFiNetwork::DecodableType commandData;
-						TLVError = DataModel::Decode(aDataTlv, commandData);
-						if (TLVError == CHIP_NO_ERROR) {
-							wasHandled =
-								emberAfNetworkCommissioningClusterAddOrUpdateWiFiNetworkCallback(
-									apCommandObj, aCommandPath, commandData);
-						}
-						break;
-					}
 					case Commands::AddOrUpdateThreadNetwork::Id: {
 						Commands::AddOrUpdateThreadNetwork::DecodableType commandData;
 						TLVError = DataModel::Decode(aDataTlv, commandData);
