@@ -1,4 +1,4 @@
-.. ### This page lists links used in NCS docs.
+.. ### This page lists links used in nRF Connect SDK docs.
        Links are grouped by source URL if three or more have the same source URL.
        Otherwise, they are placed in "Source: other".
        Links not separated by blank line are related to one another.
