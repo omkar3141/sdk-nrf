@@ -11,8 +11,27 @@
 #include <bluetooth/mesh/models.h>
 #include <bluetooth/mesh/dk_prov.h>
 #include <dk_buttons_and_leds.h>
+#include <zephyr/dfu/mcuboot.h>
 #include "model_handler.h"
 #include "lc_pwm_led.h"
+
+#ifdef CONFIG_MCUMGR_SMP_BT
+#include <mgmt/mcumgr/smp_bt.h>
+#endif
+#ifdef CONFIG_MCUMGR_CMD_OS_MGMT
+#include "os_mgmt/os_mgmt.h"
+#endif
+#ifdef CONFIG_MCUMGR_CMD_IMG_MGMT
+#include "img_mgmt/img_mgmt.h"
+#endif
+#include <device.h>
+#include <soc.h>
+#include <bluetooth/uuid.h>
+#include <bluetooth/gatt.h>
+#include <bluetooth/hci.h>
+#define BT_DBG_ENABLED IS_ENABLED(CONFIG_BT_MESH_DEBUG)
+#define LOG_MODULE_NAME main_c
+#include "common/log.h"
 
 #ifdef CONFIG_EMDS
 #include <emds/emds.h>
@@ -21,6 +40,92 @@
 #define EMDS_DEV_PRIO 0
 #define EMDS_ISR_ARG 0
 #define EMDS_IRQ_FLAGS 0
+
+
+
+
+#define BT_LE_ADV_SMP_PARAM BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONNECTABLE | \
+					    BT_LE_ADV_OPT_USE_NAME, \
+					    BT_GAP_ADV_SLOW_INT_MIN, \
+					    BT_GAP_ADV_SLOW_INT_MAX, NULL)
+
+static struct bt_conn *current_conn;
+static bool stateConnected = false;
+
+static const struct bt_data ad[] = {
+	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
+	BT_DATA_BYTES(BT_DATA_UUID128_ALL,
+		      0x84, 0xaa, 0x60, 0x74, 0x52, 0x8a, 0x8b, 0x86,
+		      0xd3, 0x4c, 0xb7, 0x1d, 0x1d, 0xdc, 0x53, 0x8d),
+};
+
+bool isConnected() {
+    return stateConnected;
+}
+
+static void connected(struct bt_conn *conn, uint8_t err)
+{
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	if (err) {
+		LOG_ERR("Connection failed (err %u)", err);
+		return;
+	}
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+	LOG_INF("Connected %s", addr);
+
+	current_conn = bt_conn_ref(conn);
+
+	// gp_led_on();
+	stateConnected = true;
+}
+
+static void disconnected(struct bt_conn *conn, uint8_t reason)
+{
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	LOG_INF("Disconnected: %s (reason %u)", addr, reason);
+
+	if (current_conn) {
+		bt_conn_unref(current_conn);
+		current_conn = NULL;
+		// gp_led_off();
+	}
+	stateConnected = false;
+}
+
+static struct bt_conn_cb conn_callbacks = {
+	.connected    = connected,
+	.disconnected = disconnected,
+};
+
+static void ble_hdl_init(void)
+{
+#ifdef CONFIG_MCUMGR_CMD_OS_MGMT
+	os_mgmt_register_group();
+#endif
+#ifdef CONFIG_MCUMGR_CMD_IMG_MGMT
+	img_mgmt_register_group();
+#endif
+	bt_conn_cb_register(&conn_callbacks);
+#ifdef CONFIG_MCUMGR_SMP_BT
+	smp_bt_register();
+#endif
+}
+
+static void ble_hdl_start(void)
+{
+	int rc = bt_le_adv_start(BT_LE_ADV_SMP_PARAM, ad, ARRAY_SIZE(ad), NULL, 0);
+	if (rc) {
+		LOG_ERR("Advertising SMP failed to start (code %d)", rc);
+	} else {
+		LOG_DBG("Advertising SMP successfully started");
+	}
+	LOG_INF("Application started\n");
+}
 
 static void button_handler_cb(uint32_t pressed, uint32_t changed)
 {
@@ -129,4 +234,12 @@ void main(void)
 	if (err) {
 		printk("Bluetooth init failed (err %d)\n", err);
 	}
+
+	ble_hdl_init();
+	ble_hdl_start();
+
+	// err = boot_write_img_confirmed();
+	// if (err) {
+	// 	printk("Failed to confirm image: %d\n", err);
+	// }
 }
