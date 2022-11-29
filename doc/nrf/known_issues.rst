@@ -7,6 +7,10 @@ Known issues
    :local:
    :depth: 2
 
+.. note::
+
+   You are looking at the page for the patch release. For the latest version of the page that tracks updates on the ``main`` branch, see the `known issues page on the main branch`_.
+
 Known issues listed on this page *and* tagged with the :ref:`latest official release version <release_notes>` are valid for the current state of development.
 Use the drop-down filter to see known issues for previous releases and check if they are still valid.
 

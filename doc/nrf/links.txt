@@ -186,6 +186,8 @@
 .. _`nRF Connect SDK v0.3.0 documentation`: https://developer.nordicsemi.com/nRF_Connect_SDK/doc/0.3.0/nrf/index.html
 .. _`nRF Connect SDK latest documentation`: https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/index.html
 
+.. _`changelog on the main branch`: https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/releases/release-notes-changelog.html
+
 .. _`known issues page on the main branch`: https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/known_issues.html
 .. _`known issues for nRF Connect SDK v2.2.0`: https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/known_issues.html?v=v2-2-0
 .. _`known issues for nRF Connect SDK v2.1.3`: https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/known_issues.html?v=v2-1-3
