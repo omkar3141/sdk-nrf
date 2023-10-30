@@ -248,6 +248,7 @@ static struct bt_mesh_elem elements[] = {
 		     BT_MESH_MODEL_LIST(
 			     BT_MESH_MODEL_CFG_SRV,
 			     BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
+			     BT_MESH_MODEL_RPR_SRV,
 			     BT_MESH_MODEL_LIGHTNESS_SRV(
 					 &my_ctx.lightness_srv),
 			     BT_MESH_MODEL_SCENE_SRV(&scene_srv),
