@@ -290,6 +290,9 @@ void model_handler_start(void)
 	bt_mesh_ponoff_srv_set(&light_ctrl_srv.lightness->ponoff,
 			       BT_MESH_ON_POWER_UP_RESTORE);
 
+	printk("Light LC Occupancy Mode is set to `1`\n");
+	atomic_set_bit_to(&light_ctrl_srv.flags, 1, 1);
+
 	err = bt_mesh_light_ctrl_srv_enable(&light_ctrl_srv);
 	if (!err) {
 		printk("Successfully enabled LC server\n");
