@@ -9,6 +9,7 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include <bluetooth/mesh/models.h>
 #include <dk_buttons_and_leds.h>
+#include <bluetooth/mesh/sensor_types.h>
 
 #include <zephyr/shell/shell.h>
 #include <zephyr/shell/shell_uart.h>
@@ -223,6 +224,54 @@ static struct bt_mesh_chat_cli chat = {
 	.handlers = &chat_handlers,
 };
 
+static int amb_light_level_get(struct bt_mesh_sensor_srv *srv,
+			       struct bt_mesh_sensor *sensor,
+			       struct bt_mesh_msg_ctx *ctx,
+			       struct bt_mesh_sensor_value *rsp)
+{
+	int err;
+
+	/* Report ambient light as dummy value, and changing it by pressing
+	 * a button. The logic and hardware for measuring the actual ambient
+	 * light usage of the device should be implemented here.
+	 */
+	float reported_value = 1234;
+
+	err = bt_mesh_sensor_value_from_float(sensor->type->channels[0].format,
+					      reported_value, rsp);
+	if (err && err != -ERANGE) {
+		printk("Error encoding ambient light level sensor data (%d)\n", err);
+		return err;
+	}
+
+	printk("Ambient light level: %s\n", bt_mesh_sensor_ch_str(rsp));
+	return 0;
+}
+
+static const struct bt_mesh_sensor_descriptor present_amb_light_desc = {
+	.tolerance = {
+		.negative = BT_MESH_SENSOR_TOLERANCE_ENCODE(0),
+		.positive = BT_MESH_SENSOR_TOLERANCE_ENCODE(0),
+	},
+	.sampling_type = BT_MESH_SENSOR_SAMPLING_UNSPECIFIED,
+	.period = 0,
+	.update_interval = 0,
+};
+
+
+static struct bt_mesh_sensor present_amb_light_level = {
+	.type = &bt_mesh_sensor_present_amb_light_level,
+	.get = amb_light_level_get,
+	.descriptor = &present_amb_light_desc
+};
+
+static struct bt_mesh_sensor *const ambient_light_sensor[] = {
+	&present_amb_light_level,
+};
+
+static struct bt_mesh_sensor_srv sensor_srv =
+	BT_MESH_SENSOR_SRV_INIT(ambient_light_sensor, ARRAY_SIZE(ambient_light_sensor));
+
 static struct bt_mesh_elem elements[] = {
 	BT_MESH_ELEM(
 		1,
@@ -230,7 +279,11 @@ static struct bt_mesh_elem elements[] = {
 			BT_MESH_MODEL_CFG_SRV,
 			BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub)),
 		BT_MESH_MODEL_LIST(BT_MESH_MODEL_CHAT_CLI(&chat))),
+	BT_MESH_ELEM(2,
+		BT_MESH_MODEL_LIST(BT_MESH_MODEL_SENSOR_SRV(&sensor_srv)),
+		BT_MESH_MODEL_NONE),
 };
+
 /* .. include_endpoint_model_handler_rst_1 */
 
 static void print_client_status(void)
