@@ -47,6 +47,44 @@ static struct button buttons[] = {
 #endif
 };
 
+/* Send OnOff Set msg to toggle the state */
+static bool onoff;
+uint32_t ts_send;
+
+/* Delayable work callback */
+/* Define a delayable k_work and assign a callback */
+#define MAX_SAMPLES (1000)
+
+#define INTERVAL_MS (300)
+
+static struct k_work_delayable per_work;
+static int i;
+
+static void periodic_pub_work(struct k_work *work)
+{
+	onoff = !onoff;
+
+	struct bt_mesh_onoff_set set = {
+		.on_off = onoff
+	};
+
+	int err = bt_mesh_onoff_cli_set(&buttons[0].client, NULL, &set, NULL);
+	ts_send = k_uptime_get_32();
+
+	if (err) {
+		printk("OnOff set failed: %d\n", err);
+	}
+
+	i++;
+	if (i < MAX_SAMPLES) {
+		k_work_reschedule(&per_work, K_MSEC(INTERVAL_MS));
+	}
+
+	if (i == MAX_SAMPLES) {
+		printk("done\n");
+	}
+}
+
 static void status_handler(struct bt_mesh_onoff_cli *cli,
 			   struct bt_mesh_msg_ctx *ctx,
 			   const struct bt_mesh_onoff_status *status)
@@ -58,9 +96,10 @@ static void status_handler(struct bt_mesh_onoff_cli *cli,
 	button->status = status->present_on_off;
 	dk_set_led(index, status->present_on_off);
 
-	printk("Button %d: Received response: %s\n", index + 1,
-	       status->present_on_off ? "on" : "off");
+	printk("Button %d: Received response: %d Time delta: %d ms\n", index + 1,
+	       status->present_on_off, k_uptime_get_32() - ts_send);
 }
+
 
 static void button_handler_cb(uint32_t pressed, uint32_t changed)
 {
@@ -209,6 +248,9 @@ const struct bt_mesh_comp *model_handler_init(void)
 
 	dk_button_handler_add(&button_handler);
 	k_work_init_delayable(&attention_blink_work, attention_blink);
+
+	k_work_init_delayable(&per_work, periodic_pub_work);
+	k_work_reschedule(&per_work, K_SECONDS(1));
 
 	return &comp;
 }
