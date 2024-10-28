@@ -26,26 +26,66 @@ struct button {
 	bool status;
 	/** Generic OnOff client instance for this switch. */
 	struct bt_mesh_onoff_cli client;
+	/** Generic OnOff server instance */
+	struct bt_mesh_onoff_srv srv;
 };
 
 static void status_handler(struct bt_mesh_onoff_cli *cli,
 			   struct bt_mesh_msg_ctx *ctx,
 			   const struct bt_mesh_onoff_status *status);
 
+
+static void led_set(struct bt_mesh_onoff_srv *srv, struct bt_mesh_msg_ctx *ctx,
+		    const struct bt_mesh_onoff_set *set,
+		    struct bt_mesh_onoff_status *rsp);
+
+static void led_get(struct bt_mesh_onoff_srv *srv, struct bt_mesh_msg_ctx *ctx,
+		    struct bt_mesh_onoff_status *rsp);
+
+static const struct bt_mesh_onoff_srv_handlers onoff_handlers = {
+	.set = led_set,
+	.get = led_get,
+};
+
 static struct button buttons[] = {
 #if DT_NODE_EXISTS(DT_ALIAS(sw0))
-	{ .client = BT_MESH_ONOFF_CLI_INIT(&status_handler) },
+	{ .client = BT_MESH_ONOFF_CLI_INIT(&status_handler),
+	  .srv = BT_MESH_ONOFF_SRV_INIT(&onoff_handlers) },
 #endif
 #if DT_NODE_EXISTS(DT_ALIAS(sw1))
-	{ .client = BT_MESH_ONOFF_CLI_INIT(&status_handler) },
+	{ .client = BT_MESH_ONOFF_CLI_INIT(&status_handler),
+	  .srv = BT_MESH_ONOFF_SRV_INIT(&onoff_handlers) },
 #endif
 #if DT_NODE_EXISTS(DT_ALIAS(sw2))
-	{ .client = BT_MESH_ONOFF_CLI_INIT(&status_handler) },
+	{ .client = BT_MESH_ONOFF_CLI_INIT(&status_handler),
+	  .srv = BT_MESH_ONOFF_SRV_INIT(&onoff_handlers) },
 #endif
 #if DT_NODE_EXISTS(DT_ALIAS(sw3)) && !defined(CONFIG_BT_MESH_LOW_POWER)
-	{ .client = BT_MESH_ONOFF_CLI_INIT(&status_handler) },
+	{ .client = BT_MESH_ONOFF_CLI_INIT(&status_handler),
+	  .srv = BT_MESH_ONOFF_SRV_INIT(&onoff_handlers) },
 #endif
 };
+
+uint8_t led_status[sizeof(buttons) / sizeof(buttons[0])];
+
+static void led_set(struct bt_mesh_onoff_srv *srv, struct bt_mesh_msg_ctx *ctx,
+		    const struct bt_mesh_onoff_set *set,
+		    struct bt_mesh_onoff_status *rsp)
+{
+	struct button *button = CONTAINER_OF(srv, struct button, srv);
+
+	rsp->present_on_off = set->on_off;
+	led_status[button - &buttons[0]] = set->on_off;
+	dk_set_led(button - &buttons[0], set->on_off);
+}
+
+static void led_get(struct bt_mesh_onoff_srv *srv, struct bt_mesh_msg_ctx *ctx,
+		    struct bt_mesh_onoff_status *rsp)
+{
+	struct button *button = CONTAINER_OF(srv, struct button, srv);
+	rsp->present_on_off = led_status[button - &buttons[0]];
+}
+
 
 static void status_handler(struct bt_mesh_onoff_cli *cli,
 			   struct bt_mesh_msg_ctx *ctx,
@@ -89,23 +129,40 @@ static void button_handler_cb(uint32_t pressed, uint32_t changed)
 		 * applies in LPN mode, since we can't expect to receive a response
 		 * in appropriate time.
 		 */
-		if (bt_mesh_model_pub_is_unicast(buttons[i].client.model) &&
-		    !IS_ENABLED(CONFIG_BT_MESH_LOW_POWER)) {
-			err = bt_mesh_onoff_cli_set(&buttons[i].client, NULL, &set, NULL);
-		} else {
-			err = bt_mesh_onoff_cli_set_unack(&buttons[i].client,
-							  NULL, &set);
-			if (!err) {
-				/* There'll be no response status for the
-				 * unacked message. Set the state immediately.
-				 */
-				buttons[i].status = set.on_off;
-				dk_set_led(i, set.on_off);
+
+		// Debug: Only enable first two buttons for OnOff client publishing
+		if (i == 0 || i == 1) {
+			if (bt_mesh_model_pub_is_unicast(buttons[i].client.model) &&
+			!IS_ENABLED(CONFIG_BT_MESH_LOW_POWER)) {
+				err = bt_mesh_onoff_cli_set(&buttons[i].client, NULL, &set, NULL);
+			} else {
+				err = bt_mesh_onoff_cli_set_unack(&buttons[i].client,
+								NULL, &set);
+				if (!err) {
+					/* There'll be no response status for the
+					* unacked message. Set the state immediately.
+					*/
+					buttons[i].status = set.on_off;
+					dk_set_led(i, set.on_off);
+				}
+			}
+
+			if (err) {
+				printk("OnOff %d set failed: %d\n", i + 1, err);
 			}
 		}
 
-		if (err) {
-			printk("OnOff %d set failed: %d\n", i + 1, err);
+		// Debug: Enable second two buttons for OnOff server publishing
+		/* Toggle server LED status and publish it for servers on button 2 and 3. */
+		if (i == 2 || i == 3) {
+			struct bt_mesh_onoff_status status = {0};
+
+			status.present_on_off = !buttons[i].status;
+
+			err = bt_mesh_onoff_srv_pub(&buttons[i].srv, NULL, &status);
+			if (err) {
+				printk("OnOff srv %d, Status Publish failed: %d\n", i + 1, err);
+			}
 		}
 	}
 }
@@ -171,25 +228,29 @@ static struct bt_mesh_elem elements[] = {
 		     BT_MESH_MODEL_LIST(
 			     BT_MESH_MODEL_CFG_SRV,
 			     BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
-			     BT_MESH_MODEL_ONOFF_CLI(&buttons[0].client)),
+			     BT_MESH_MODEL_ONOFF_CLI(&buttons[0].client),
+			     BT_MESH_MODEL_ONOFF_SRV(&buttons[0].srv)),
 		     BT_MESH_MODEL_NONE),
 #endif
 #if DT_NODE_EXISTS(DT_ALIAS(sw1))
 	BT_MESH_ELEM(2,
 		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_ONOFF_CLI(&buttons[1].client)),
+			     BT_MESH_MODEL_ONOFF_CLI(&buttons[1].client),
+			     BT_MESH_MODEL_ONOFF_SRV(&buttons[0].srv)),
 		     BT_MESH_MODEL_NONE),
 #endif
 #if DT_NODE_EXISTS(DT_ALIAS(sw2))
 	BT_MESH_ELEM(3,
 		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_ONOFF_CLI(&buttons[2].client)),
+			     BT_MESH_MODEL_ONOFF_CLI(&buttons[2].client),
+			     BT_MESH_MODEL_ONOFF_SRV(&buttons[0].srv)),
 		     BT_MESH_MODEL_NONE),
 #endif
 #if DT_NODE_EXISTS(DT_ALIAS(sw3)) && !defined(CONFIG_BT_MESH_LOW_POWER)
 	BT_MESH_ELEM(4,
 		     BT_MESH_MODEL_LIST(
-			     BT_MESH_MODEL_ONOFF_CLI(&buttons[3].client)),
+			     BT_MESH_MODEL_ONOFF_CLI(&buttons[3].client),
+			     BT_MESH_MODEL_ONOFF_SRV(&buttons[0].srv)),
 		     BT_MESH_MODEL_NONE),
 #endif
 
