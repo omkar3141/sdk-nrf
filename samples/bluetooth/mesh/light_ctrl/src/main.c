@@ -138,6 +138,11 @@ static void bt_ready(int err)
 	printk("Mesh initialized\n");
 
 	model_handler_start();
+
+	err = bt_mesh_od_priv_proxy_set(1);
+	if (err) {
+		printk("OD private proxy state set (err %d)\n", err);
+	}
 }
 
 int main(void)

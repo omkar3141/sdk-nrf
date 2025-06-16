@@ -243,6 +243,12 @@ static struct bt_mesh_elem elements[] = {
 		     BT_MESH_MODEL_LIST(
 			     BT_MESH_MODEL_CFG_SRV,
 			     BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
+#if defined(CONFIG_BT_MESH_PRIV_BEACON_SRV)
+			     BT_MESH_MODEL_PRIV_BEACON_SRV,
+#endif
+#if defined(CONFIG_BT_MESH_OD_PRIV_PROXY_SRV)
+			     BT_MESH_MODEL_OD_PRIV_PROXY_SRV,
+#endif
 			     BT_MESH_MODEL_LIGHTNESS_SRV(
 					 &my_ctx.lightness_srv),
 			     BT_MESH_MODEL_SCENE_SRV(&scene_srv),
