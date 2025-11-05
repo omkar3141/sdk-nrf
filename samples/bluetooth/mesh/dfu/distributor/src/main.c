@@ -17,6 +17,9 @@
 #include "smp_bt.h"
 #include "dfu_dist.h"
 #include "dfu_target.h"
+#include <mgmt/img_mgmt/img_mgmt.h>
+#include <zephyr/mgmt/mcumgr/mgmt/callbacks.h>
+#include <zephyr/mgmt/mcumgr/grp/img_mgmt/img_mgmt_callbacks.h>
 
 static struct bt_mesh_blob_io_flash blob_flash_stream;
 
@@ -102,6 +105,45 @@ static const struct bt_mesh_comp comp = {
 	.elem_count = ARRAY_SIZE(elements),
 };
 
+static atomic_t dfu_erase_requested;
+
+static enum mgmt_cb_return dfu_mgmt_cb(uint32_t event, enum mgmt_cb_return prev_status,
+					  int32_t *rc, uint16_t *group, bool *abort_more,
+					  void *data, size_t data_size)
+{
+	ARG_UNUSED(prev_status);
+	ARG_UNUSED(rc);
+	ARG_UNUSED(group);
+	ARG_UNUSED(abort_more);
+
+	switch (event) {
+	case MGMT_EVT_OP_IMG_MGMT_DFU_CHUNK: {
+		struct img_mgmt_upload_check *check = (struct img_mgmt_upload_check *)data;
+		if (check && check->action && check->action->erase) {
+			atomic_set(&dfu_erase_requested, 1);
+		}
+		break;
+	}
+	case MGMT_EVT_OP_IMG_MGMT_DFU_PENDING: {
+		if (atomic_get(&dfu_erase_requested)) {
+			printk("DFU erase requested: resetting Mesh state\n");
+			bt_mesh_reset();
+			atomic_clear(&dfu_erase_requested);
+		}
+		break;
+	}
+	default:
+		break;
+	}
+
+	return MGMT_CB_OK;
+}
+
+static struct mgmt_callback dfu_mgmt_cb_handle = {
+	.callback = dfu_mgmt_cb,
+	.event_id = (MGMT_EVT_OP_IMG_MGMT_DFU_CHUNK | MGMT_EVT_OP_IMG_MGMT_DFU_PENDING),
+};
+
 static void bt_ready(int err)
 {
 	if (err) {
@@ -136,6 +178,9 @@ static void bt_ready(int err)
 	if (err) {
 		printk("SMP initialization failed (err: %d)\n", err);
 	}
+
+	/* Register DFU erase handling via MCUmgr callbacks */
+	mgmt_callback_register(&dfu_mgmt_cb_handle);
 
 	/* Confirm the image and mark it as applied after the mesh started. */
 	dfu_target_image_confirm();
