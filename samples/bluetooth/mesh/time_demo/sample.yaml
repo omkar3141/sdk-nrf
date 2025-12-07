@@ -1,0 +1,11 @@
+sample:
+  description: Bluetooth Mesh Time Models demonstration sample
+  name: Bluetooth Mesh Time Demo
+tests:
+  sample.bluetooth.mesh.time_demo:
+    sysbuild: true
+    build_only: true
+    integration_platforms:
+      - nrf54l15dk/nrf54l15/cpuapp
+    platform_allow: nrf54l15dk/nrf54l15/cpuapp
+    tags: bluetooth ci_build sysbuild
