@@ -107,6 +107,34 @@ static struct bt_mesh_health_srv health_srv = {
 
 BT_MESH_HEALTH_PUB_DEFINE(health_pub, 0);
 
+/* Generic OnOff Client on element 0, driven by button 0 */
+static bool onoff_client_state;
+static void onoff_cli_status_handler(struct bt_mesh_onoff_cli *cli,
+				    struct bt_mesh_msg_ctx *ctx,
+				    const struct bt_mesh_onoff_status *status)
+{
+	onoff_client_state = status->present_on_off;
+	printk("Generic OnOff: %s\n", status->present_on_off ? "on" : "off");
+}
+
+static struct bt_mesh_onoff_cli onoff_cli =
+	BT_MESH_ONOFF_CLI_INIT(onoff_cli_status_handler);
+
+static void onoff_button_handler_cb(uint32_t pressed, uint32_t changed)
+{
+	if (!bt_mesh_is_provisioned() || !(pressed & changed & BIT(0))) {
+		return;
+	}
+	onoff_client_state = !onoff_client_state;
+	struct bt_mesh_onoff_set set = { .on_off = onoff_client_state };
+	int err = bt_mesh_onoff_cli_set_unack(&onoff_cli, NULL, &set);
+
+	if (err) {
+		printk("OnOff set_unack failed: %d\n", err);
+		onoff_client_state = !onoff_client_state;
+	}
+}
+
 static void start_new_light_trans(const struct bt_mesh_lightness_set *set,
 				  struct lightness_ctx *ctx)
 {
@@ -243,6 +271,7 @@ static struct bt_mesh_elem elements[] = {
 		     BT_MESH_MODEL_LIST(
 			     BT_MESH_MODEL_CFG_SRV,
 			     BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
+			     BT_MESH_MODEL_ONOFF_CLI(&onoff_cli),
 			     BT_MESH_MODEL_LIGHTNESS_SRV(
 					 &my_ctx.lightness_srv),
 			     BT_MESH_MODEL_SCENE_SRV(&scene_srv),
@@ -262,6 +291,11 @@ static const struct bt_mesh_comp comp = {
 
 const struct bt_mesh_comp *model_handler_init(void)
 {
+	static struct button_handler onoff_button_handler = {
+		.cb = onoff_button_handler_cb,
+	};
+
+	dk_button_handler_add(&onoff_button_handler);
 	k_work_init_delayable(&attention_blink_work, attention_blink);
 	k_work_init_delayable(&my_ctx.per_work, periodic_led_work);
 
