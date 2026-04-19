@@ -12,6 +12,8 @@
 
 #include "smp_bt_auth.h"
 
+#if IS_ENABLED(CONFIG_BT_MESH_SMP_SERVICE_ADV)
+
 static void pending_adv_start(struct k_work *work);
 
 static struct bt_le_ext_adv *adv;
@@ -145,6 +147,8 @@ int smp_service_adv_init(void)
 
 	return err;
 }
+
+#endif /* CONFIG_BT_MESH_SMP_SERVICE_ADV */
 /* .. include_endpoint_mesh_smp_dfu_rst_1 */
 
 int smp_dfu_init(void)
@@ -163,6 +167,7 @@ int smp_dfu_init(void)
 	}
 
 /* .. include_startingpoint_mesh_smp_dfu_rst_2 */
+#if IS_ENABLED(CONFIG_BT_MESH_SMP_SERVICE_ADV)
 	bt_conn_cb_register(&conn_callbacks);
 
 	/**
@@ -171,5 +176,8 @@ int smp_dfu_init(void)
 	 * the SMP service.
 	 */
 	return smp_service_adv_init();
+#else
+	return 0;
+#endif
 /* .. include_endpoint_mesh_smp_dfu_rst_2 */
 }

@@ -16,3 +16,5 @@ configdefault PM_PARTITION_SIZE_TFM
 	default 0x18000 if TFM_PROFILE_TYPE_SMALL
 
 source "Kconfig.zephyr"
+
+rsource "../common/Kconfig.smp_bt"

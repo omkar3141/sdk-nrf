@@ -1,0 +1,16 @@
+#
+# Copyright (c) 2026 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+
+config BT_MESH_SMP_SERVICE_ADV
+	bool "Dedicated advertising for SMP GATT service"
+	default y
+	help
+	  When SMP/mcumgr over Bluetooth is enabled for a Bluetooth mesh sample,
+	  enable a secondary connectable advertising set that broadcasts the SMP
+	  GATT service UUID on a separate identity.
+
+	  Disable to omit dedicated SMP advertising while keeping the SMP GATT
+	  service available on GATT connections established through other means,
+	  for example Mesh GATT Proxy.
