@@ -14,5 +14,10 @@ target_sources(app PRIVATE
   src/model_handler.c
   src/lc_pwm_led.c
 )
+
+if(CONFIG_LIGHT_CTRL_ZMS_FOOTPRINT_DBG)
+  target_sources(app PRIVATE src/zms_footprint_dbg.c)
+endif()
+
 target_include_directories(app PRIVATE include)
 # NORDIC SDK APP END

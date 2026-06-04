@@ -15,6 +15,11 @@
 #include "model_handler.h"
 #include "lc_pwm_led.h"
 
+#if IS_ENABLED(CONFIG_LIGHT_CTRL_ZMS_FOOTPRINT_DBG)
+#include <zephyr/bluetooth/mesh/main.h>
+#include "zms_footprint_dbg.h"
+#endif
+
 #ifdef CONFIG_EMDS
 #include <emds/emds.h>
 
@@ -91,6 +96,15 @@ static void node_reset_handler(void)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_LIGHT_CTRL_ZMS_FOOTPRINT_DBG)
+static void zms_footprint_button_cb(uint32_t pressed, uint32_t changed)
+{
+	if ((pressed & changed & BIT(1)) && bt_mesh_is_provisioned()) {
+		zms_footprint_dbg_dump();
+	}
+}
+#endif
+
 static void bt_ready(int err)
 {
 	if (err) {
@@ -159,6 +173,16 @@ static void bt_ready(int err)
 	if (IS_ENABLED(CONFIG_SETTINGS)) {
 		settings_load();
 	}
+
+#if IS_ENABLED(CONFIG_LIGHT_CTRL_ZMS_FOOTPRINT_DBG)
+	{
+		static struct button_handler zms_fp_btn = {
+			.cb = zms_footprint_button_cb,
+		};
+
+		dk_button_handler_add(&zms_fp_btn);
+	}
+#endif
 
 	/* This will be a no-op if settings_load() loaded provisioning info */
 	bt_mesh_prov_enable(BT_MESH_PROV_ADV | BT_MESH_PROV_GATT);

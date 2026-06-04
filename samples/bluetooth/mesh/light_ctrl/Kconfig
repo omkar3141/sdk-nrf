@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2026 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+source "Kconfig.zephyr"
+
+menu "Bluetooth Mesh light_ctrl sample"
+
+config LIGHT_CTRL_ZMS_FOOTPRINT_DBG
+	bool "ZMS settings footprint dump on button press"
+	depends on SETTINGS && SETTINGS_ZMS
+	help
+	  Temporary debug: on Button 2 (nRF54L15 DK), print tabular ZMS footprint
+	  for mesh settings (non-RPL) and RPL in separate tables, plus summary.
+
+endmenu
