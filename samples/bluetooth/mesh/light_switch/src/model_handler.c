@@ -20,6 +20,26 @@
 
 /* Light switch behavior */
 
+#if defined(CONFIG_BT_MESH_LOW_POWER)
+static bool lpn_friended;
+
+static void lpn_established(uint16_t net_idx, uint16_t friend_addr,
+			    uint8_t queue_size, uint8_t recv_window)
+{
+	lpn_friended = true;
+}
+
+static void lpn_terminated(uint16_t net_idx, uint16_t friend_addr)
+{
+	lpn_friended = false;
+}
+
+BT_MESH_LPN_CB_DEFINE(lpn_cb) = {
+	.established = lpn_established,
+	.terminated = lpn_terminated,
+};
+#endif
+
 /** Context for a single light switch. */
 struct button {
 	/** Current light status of the corresponding server. */
@@ -56,10 +76,15 @@ static void status_handler(struct bt_mesh_onoff_cli *cli,
 	int index = button - &buttons[0];
 
 	button->status = status->present_on_off;
-	dk_set_led(index, status->present_on_off);
 
 	printk("Button %d: Received response: %s\n", index + 1,
-	       status->present_on_off ? "on" : "off");
+		status->present_on_off ? "on" : "off");
+
+	if (IS_ENABLED(CONFIG_BT_MESH_LOW_POWER) && lpn_friended) {
+		return;
+	}
+
+	dk_set_led(index, status->present_on_off);
 }
 
 static void button_handler_cb(uint32_t pressed, uint32_t changed)
@@ -100,7 +125,9 @@ static void button_handler_cb(uint32_t pressed, uint32_t changed)
 				 * unacked message. Set the state immediately.
 				 */
 				buttons[i].status = set.on_off;
-				dk_set_led(i, set.on_off);
+				if (IS_ENABLED(CONFIG_BT_MESH_LOW_POWER) && !lpn_friended) {
+					dk_set_led(i, set.on_off);
+				}
 			}
 		}
 

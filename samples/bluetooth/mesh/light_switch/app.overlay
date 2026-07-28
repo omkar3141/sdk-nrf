@@ -1,0 +1,5 @@
+/* Limit linker SRAM; unused sections are powered off at runtime (see main.c). */
+&cpuapp_sram {
+	reg = <0x20000000 DT_SIZE_K(96)>;
+	ranges = <0x0 0x20000000 DT_SIZE_K(96)>;
+};

@@ -8,10 +8,28 @@
  *  @brief Nordic mesh light switch sample
  */
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/devicetree.h>
 #include <bluetooth/mesh/models.h>
 #include <bluetooth/mesh/dk_prov.h>
 #include <dk_buttons_and_leds.h>
 #include "model_handler.h"
+
+#if IS_ENABLED(CONFIG_RAM_POWER_DOWN_LIBRARY)
+#include <ram_pwrdn.h>
+
+static void app_power_down_unavailable_ram(void)
+{
+#if defined(CONFIG_SOC_NRF54L15_CPUAPP) && DT_NODE_EXISTS(DT_CHOSEN(zephyr_sram))
+	const uintptr_t app_sram_end =
+		DT_REG_ADDR(DT_CHOSEN(zephyr_sram)) + DT_REG_SIZE(DT_CHOSEN(zephyr_sram));
+	const uintptr_t soc_sram_end = 0x20040000UL;
+
+	if (app_sram_end < soc_sram_end) {
+		power_down_ram(app_sram_end, soc_sram_end);
+	}
+#endif
+}
+#endif
 
 static void bt_ready(int err)
 {
@@ -52,6 +70,10 @@ static void bt_ready(int err)
 	bt_mesh_prov_enable(BT_MESH_PROV_ADV | BT_MESH_PROV_GATT);
 
 	printk("Mesh initialized\n");
+
+	if (IS_ENABLED(CONFIG_RAM_POWER_DOWN_LIBRARY)) {
+		app_power_down_unavailable_ram();
+	}
 }
 
 int main(void)
