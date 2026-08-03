@@ -17,6 +17,16 @@
 #include <zephyr/bluetooth/mesh/proxy.h>
 #include <zephyr/sys/atomic.h>
 #include <errno.h>
+#if defined(CONFIG_BT_CTLR_SDC_EVENT_TRIGGER) && defined(CONFIG_NRFX_DPPI10) && \
+	defined(CONFIG_NRFX_DPPI20) && defined(CONFIG_NRFX_PPIB11) && \
+	defined(CONFIG_NRFX_PPIB21) && defined(CONFIG_NRFX_TIMER22)
+#define SDC_EVENT_COUNTER_ENABLED
+#include <bluetooth/hci_vs_sdc.h>
+#include <hal/nrf_egu.h>
+#include <nrfx_dppi.h>
+#include <nrfx_ppib.h>
+#include <nrfx_timer.h>
+#endif
 #include <bluetooth/mesh/models.h>
 #include <dk_buttons_and_leds.h>
 #include "model_handler.h"
@@ -61,12 +71,165 @@ static bool periodic_onoff;
 static atomic_t unack_tx_count;
 static atomic_t adv_event_histogram[ADV_EVENT_HISTOGRAM_SIZE];
 
+#if defined(SDC_EVENT_COUNTER_ENABLED)
+static const nrfx_timer_t sdc_event_timer = NRFX_TIMER_INSTANCE(22);
+static const nrfx_dppi_t sdc_event_radio_dppi = NRFX_DPPI_INSTANCE(10);
+static const nrfx_dppi_t sdc_event_peri_dppi = NRFX_DPPI_INSTANCE(20);
+static const nrfx_ppib_interconnect_t sdc_event_ppib =
+	NRFX_PPIB_INTERCONNECT_INSTANCE(11, 21);
+static bool sdc_event_counter_initialized;
+static bool sdc_event_sample_active;
+static uint32_t sdc_event_sample_start;
+static atomic_t sdc_event_start_count;
+static atomic_t reported_event_count;
+
+static int sdc_event_counter_init(void)
+{
+	nrfx_timer_config_t config =
+		NRFX_TIMER_DEFAULT_CONFIG(NRFX_TIMER_BASE_FREQUENCY_GET(&sdc_event_timer));
+	sdc_hci_cmd_vs_set_event_start_task_t params;
+	uint8_t radio_dppi_ch;
+	uint8_t peri_dppi_ch;
+	uint8_t ppib_ch;
+	bool radio_dppi_allocated = false;
+	bool peri_dppi_allocated = false;
+	bool ppib_allocated = false;
+	bool radio_dppi_enabled = false;
+	bool peri_dppi_enabled = false;
+	bool endpoints_configured = false;
+	nrfx_err_t nrfx_err;
+	int err;
+
+	if (sdc_event_counter_initialized) {
+		return 0;
+	}
+
+	config.mode = NRF_TIMER_MODE_COUNTER;
+	config.bit_width = NRF_TIMER_BIT_WIDTH_32;
+
+	nrfx_err = nrfx_timer_init(&sdc_event_timer, &config, NULL);
+	if (nrfx_err != NRFX_SUCCESS) {
+		return -EIO;
+	}
+
+	nrfx_timer_clear(&sdc_event_timer);
+	nrfx_timer_enable(&sdc_event_timer);
+
+	nrfx_err = nrfx_dppi_channel_alloc(&sdc_event_radio_dppi, &radio_dppi_ch);
+	if (nrfx_err != NRFX_SUCCESS) {
+		err = -ENOMEM;
+		goto cleanup;
+	}
+	radio_dppi_allocated = true;
+
+	nrfx_err = nrfx_dppi_channel_alloc(&sdc_event_peri_dppi, &peri_dppi_ch);
+	if (nrfx_err != NRFX_SUCCESS) {
+		err = -ENOMEM;
+		goto cleanup;
+	}
+	peri_dppi_allocated = true;
+
+	nrfx_err = nrfx_ppib_channel_alloc(&sdc_event_ppib, &ppib_ch);
+	if (nrfx_err != NRFX_SUCCESS) {
+		err = -ENOMEM;
+		goto cleanup;
+	}
+	ppib_allocated = true;
+
+	NRF_DPPI_ENDPOINT_SETUP(
+		nrf_egu_event_address_get(NRF_EGU10, NRF_EGU_EVENT_TRIGGERED0),
+		radio_dppi_ch);
+	NRF_DPPI_ENDPOINT_SETUP(
+		nrfx_ppib_send_task_address_get(&sdc_event_ppib.left, ppib_ch),
+		radio_dppi_ch);
+	NRF_DPPI_ENDPOINT_SETUP(
+		nrfx_ppib_receive_event_address_get(&sdc_event_ppib.right, ppib_ch),
+		peri_dppi_ch);
+	NRF_DPPI_ENDPOINT_SETUP(
+		nrfx_timer_task_address_get(&sdc_event_timer, NRF_TIMER_TASK_COUNT),
+		peri_dppi_ch);
+	endpoints_configured = true;
+
+	nrfx_err = nrfx_dppi_channel_enable(&sdc_event_radio_dppi, radio_dppi_ch);
+	if (nrfx_err != NRFX_SUCCESS) {
+		err = -EIO;
+		goto cleanup;
+	}
+	radio_dppi_enabled = true;
+
+	nrfx_err = nrfx_dppi_channel_enable(&sdc_event_peri_dppi, peri_dppi_ch);
+	if (nrfx_err != NRFX_SUCCESS) {
+		err = -EIO;
+		goto cleanup;
+	}
+	peri_dppi_enabled = true;
+
+	params.handle_type = SDC_HCI_VS_SET_EVENT_START_TASK_HANDLE_TYPE_ADV;
+	params.handle = 0;
+	params.task_address =
+		nrf_egu_task_address_get(NRF_EGU10, NRF_EGU_TASK_TRIGGER0);
+
+	err = hci_vs_sdc_set_event_start_task(&params);
+	if (err) {
+		goto cleanup;
+	}
+
+	sdc_event_counter_initialized = true;
+	printk("SDC advertiser event counter enabled\n");
+
+	return 0;
+
+cleanup:
+	if (peri_dppi_enabled) {
+		(void)nrfx_dppi_channel_disable(&sdc_event_peri_dppi, peri_dppi_ch);
+	}
+	if (radio_dppi_enabled) {
+		(void)nrfx_dppi_channel_disable(&sdc_event_radio_dppi, radio_dppi_ch);
+	}
+	if (endpoints_configured) {
+		NRF_DPPI_ENDPOINT_CLEAR(
+			nrf_egu_event_address_get(NRF_EGU10, NRF_EGU_EVENT_TRIGGERED0));
+		NRF_DPPI_ENDPOINT_CLEAR(
+			nrfx_ppib_send_task_address_get(&sdc_event_ppib.left, ppib_ch));
+		NRF_DPPI_ENDPOINT_CLEAR(
+			nrfx_ppib_receive_event_address_get(&sdc_event_ppib.right, ppib_ch));
+		NRF_DPPI_ENDPOINT_CLEAR(
+			nrfx_timer_task_address_get(&sdc_event_timer, NRF_TIMER_TASK_COUNT));
+	}
+	if (ppib_allocated) {
+		(void)nrfx_ppib_channel_free(&sdc_event_ppib, ppib_ch);
+	}
+	if (peri_dppi_allocated) {
+		(void)nrfx_dppi_channel_free(&sdc_event_peri_dppi, peri_dppi_ch);
+	}
+	if (radio_dppi_allocated) {
+		(void)nrfx_dppi_channel_free(&sdc_event_radio_dppi, radio_dppi_ch);
+	}
+	nrfx_timer_disable(&sdc_event_timer);
+	nrfx_timer_uninit(&sdc_event_timer);
+
+	return err;
+}
+#endif
+
 static void periodic_tx_end(int err, uint8_t num_sent, void *cb_data)
 {
 	const struct bt_mesh_model *model = cb_data;
 	struct bt_mesh_onoff_cli *cli = model->rt->user_data;
 	struct button *button = CONTAINER_OF(cli, struct button, client);
 	int index = button - &buttons[0];
+
+#if defined(SDC_EVENT_COUNTER_ENABLED)
+	if (sdc_event_sample_active) {
+		uint32_t current = nrfx_timer_capture(&sdc_event_timer,
+						     NRF_TIMER_CC_CHANNEL0);
+		uint32_t delta = current - sdc_event_sample_start;
+
+		atomic_add(&sdc_event_start_count, delta);
+		atomic_add(&reported_event_count, num_sent);
+		sdc_event_sample_active = false;
+	}
+#endif
 
 	dk_set_led(3, false);
 
@@ -84,6 +247,15 @@ static void periodic_tx_end(int err, uint8_t num_sent, void *cb_data)
 static void periodic_tx_send_start(uint16_t duration, int err, void *cb_data)
 {
 	ARG_UNUSED(duration);
+
+#if defined(SDC_EVENT_COUNTER_ENABLED)
+	sdc_event_sample_active = false;
+	if (!err) {
+		sdc_event_sample_start = nrfx_timer_capture(&sdc_event_timer,
+							   NRF_TIMER_CC_CHANNEL0);
+		sdc_event_sample_active = true;
+	}
+#endif
 
 	if (err) {
 		periodic_tx_end(err, 0, cb_data);
@@ -191,6 +363,15 @@ static bool periodic_tx_start(void)
 		return false;
 	}
 
+#if defined(SDC_EVENT_COUNTER_ENABLED)
+	err = sdc_event_counter_init();
+	if (err) {
+		printk("Periodic TX not started: SDC event counter setup failed (%d)\n",
+		       err);
+		return false;
+	}
+#endif
+
 	periodic_tx_log_config(&buttons[0].client);
 	printk("Periodic TX started (100 ms)\n");
 	return true;
@@ -200,16 +381,31 @@ static void stats_print_handler(struct k_work *work)
 {
 	atomic_val_t bins[ARRAY_SIZE(adv_event_histogram)];
 	atomic_val_t total = 0;
+#if defined(SDC_EVENT_COUNTER_ENABLED)
+	atomic_val_t event_starts = atomic_get(&sdc_event_start_count);
+	atomic_val_t reported_events = atomic_get(&reported_event_count);
+	int64_t event_delta = (int64_t)event_starts - (int64_t)reported_events;
+#endif
 
 	for (int i = 0; i < ARRAY_SIZE(bins); i++) {
 		bins[i] = atomic_get(&adv_event_histogram[i]);
 		total += bins[i];
 	}
 
-	printk("TX accepted: %d, num_sent samples: %d: %d %d %d %d %d %d %d %d\n",
-	       (int)atomic_get(&unack_tx_count), (int)total, (int)bins[0], (int)bins[1],
-	       (int)bins[2], (int)bins[3], (int)bins[4], (int)bins[5], (int)bins[6],
-	       (int)bins[7]);
+#if defined(SDC_EVENT_COUNTER_ENABLED)
+	printk(
+		"onoff set_unack calls: %03d, num_sent samples: %03d: %03d %03d %03d %03d %03d %03d %03d %03d | SDC event starts: %03d, reported events: %03d, delta: %lld\n",
+		(int)atomic_get(&unack_tx_count), (int)total, (int)bins[0], (int)bins[1],
+		(int)bins[2], (int)bins[3], (int)bins[4], (int)bins[5], (int)bins[6], (int)bins[7],
+		(int)event_starts, (int)reported_events, (long long)event_delta);
+#else
+	printk("onoff set_unack calls: %d, num_sent samples: %d: %d %d %d %d %d %d %d %d\n",
+		(int)atomic_get(&unack_tx_count), (int)total, (int)bins[0], (int)bins[1],
+		(int)bins[2], (int)bins[3], (int)bins[4], (int)bins[5], (int)bins[6],
+		(int)bins[7]);
+#endif
+
+
 	k_work_reschedule(&stats_print_work, K_SECONDS(5));
 }
 
