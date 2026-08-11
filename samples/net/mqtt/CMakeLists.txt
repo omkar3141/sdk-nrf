@@ -21,3 +21,4 @@ add_subdirectory(src/modules/error)
 
 # Optional modules
 add_subdirectory_ifdef(CONFIG_MQTT_SAMPLE_LED src/modules/led)
+add_subdirectory_ifdef(CONFIG_MCUMGR_TRANSPORT_BT src/modules/ble)
